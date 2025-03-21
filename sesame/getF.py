@@ -22,12 +22,12 @@ def getF(sys, v, efn, efp, veq):
     # fp_row = 3*s+1
     # fv_row = 3*s+2
 
-    Nx, Ny = sys.xpts.shape[0], sys.ypts.shape[0]
+    Nx, Ny = sys.xpts.shape[0], 1
     N = Nx* Ny
-    dx, dy = sys.dx, sys.dy
+    dx = sys.dx
 
     # right hand side vector
-    vec = np.zeros((3 * Nx * Ny,))
+    vec = np.zeros((3 * Nx,))
 
     ###########################################################################
     #                     For all sites in the system                         #
@@ -66,40 +66,38 @@ def getF(sys, v, efn, efp, veq):
     dx = np.tile(sys.dx[1:], Ny)
     dxm1 = np.tile(sys.dx[:-1], Ny)
 
-    dy = np.repeat(sys.dy,Nx-2)
-    dym1 = np.repeat(np.roll(sys.dy,1),Nx-2)
+    #dy = np.repeat(sys.dy,Nx-2)
+    #dym1 = np.repeat(np.roll(sys.dy,1),Nx-2)
 
     dxbar = (dxm1 + dx) / 2.
-    dybar = (dym1 + dy) / 2.
-
+    #dybar = (dym1 + dy) / 2.
+    '''
     infind = np.where(np.isinf(dybar))
     for i in infind[0]:
         if np.isinf(dy[i]):
             dybar[i] = dy[i-Nx] / 2.
         else:
             dybar[i] = dy[i] / 2.
-
+    '''
 
     # compute the currents
     jnx_s = get_jn(sys, efn, v, sites, sites + 1, dx)
     jnx_sm1 = get_jn(sys, efn, v, sites - 1, sites, dxm1)
-    jny_s = get_jn(sys, efn, v, sites, (sites + Nx) % N, dy)
-    jny_smN = get_jn(sys, efn, v, (sites - Nx) % N, sites, dym1)
+    #jny_s = get_jn(sys, efn, v, sites, (sites + Nx) % N, dy)
+    #jny_smN = get_jn(sys, efn, v, (sites - Nx) % N, sites, dym1)
 
     jpx_s = get_jp(sys, efp, v, sites, sites + 1, dx)
     jpx_sm1 = get_jp(sys, efp, v, sites - 1, sites, dxm1)
-    jpy_s = get_jp(sys, efp, v, sites, (sites + Nx) % N, dy)
-    jpy_smN = get_jp(sys, efp, v, (sites - Nx) % N, sites, dym1)
+    #jpy_s = get_jp(sys, efp, v, sites, (sites + Nx) % N, dy)
+    #jpy_smN = get_jp(sys, efp, v, (sites - Nx) % N, sites, dym1)
 
     # ------------------------------ fn ----------------------------------------
-    fn = (jnx_s - jnx_sm1) / dxbar + (jny_s - jny_smN) / dybar \
-         + sys.g[sites] - r[sites]
+    fn = (jnx_s - jnx_sm1) / dxbar  + sys.g[sites] - r[sites]
 
     vec[3 * sites] = fn
 
     # ------------------------------ fp ----------------------------------------
-    fp = (jpx_s - jpx_sm1) / dxbar + (jpy_s - jpy_smN) / dybar \
-         + r[sites] - sys.g[sites]
+    fp = (jpx_s - jpx_sm1) / dxbar  + r[sites] - sys.g[sites]
 
     vec[3 * sites + 1] = fp
 
@@ -109,9 +107,7 @@ def getF(sys, v, efn, efp, veq):
     eps_m1y = .5 * (sys.epsilon[(sites - Nx)%N] + sys.epsilon[sites])
     eps_p1y = .5 * (sys.epsilon[(sites + Nx)%N] + sys.epsilon[sites])
 
-    fv = (eps_m1x * (v[sites] - v[sites - 1]) / dxm1 - eps_p1x * (v[sites + 1] - v[sites]) / dx) / dxbar \
-         + (eps_m1y * (v[sites] - v[(sites - Nx)%N]) / dym1 - eps_p1y * (v[(sites + Nx)%N] - v[sites]) / dy) / dybar \
-         - rho[sites]
+    fv = (eps_m1x * (v[sites] - v[sites - 1]) / dxm1 - eps_p1x * (v[sites + 1] - v[sites]) / dx) / dxbar - rho[sites]
 
     vec[3 * sites + 2] = fv
 

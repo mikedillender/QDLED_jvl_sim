@@ -11,7 +11,7 @@ from .defects  import defectsF, defectsJ
 # remember that efn and efp are zero at equilibrium
 
 def getFandJ_eq(sys, v):
-    Nx, Ny = sys.xpts.shape[0], sys.ypts.shape[0]
+    Nx, Ny = sys.xpts.shape[0], 1
     Num = Nx * Ny
     # lists of rows, columns and data that will create the sparse Jacobian
     rows = []
@@ -74,17 +74,9 @@ def getFandJ_eq(sys, v):
     # lattice distances
     dx = np.tile(sys.dx[1:], Ny)
     dxm1 = np.tile(sys.dx[:-1], Ny)
-    dy = np.repeat(sys.dy[:], Nx-2)
-    dym1 = np.repeat(np.roll(sys.dy,1),Nx-2)
 
     dxbar = (dx + dxm1) / 2.
-    dybar = (dy + dym1) / 2.
-    infind = np.where(np.isinf(dybar))
-    for i in infind[0]:
-        if np.isinf(dy[i]):
-            dybar[i] = dy[i-Nx] / 2
-        else:
-            dybar[i] = dy[i] / 2
+
 
 
     #------------------------------ fv ----------------------------------------
@@ -94,22 +86,22 @@ def getFandJ_eq(sys, v):
     eps_p1y = .5 * (sys.epsilon[(sites+Nx) % Num] + sys.epsilon[sites])
 
     fvx = (eps_m1x*(v[sites] - v[sites-1]) / dxm1 - eps_p1x*(v[sites+1] - v[sites])/dx) / dxbar
-    fvy = (eps_m1y*(v[sites] - v[(sites-Nx) % Num])/dym1 - eps_p1y*(v[(sites+Nx) % Num] - v[sites])/dy) / dybar
-    fv = fvx + fvy - rho[sites]
+    fv = fvx - rho[sites]
     # update the vector rows for the inner part of the system
     vec[sites] = fv
 
     #-------------------------- fv derivatives --------------------------------
-    dvmN = -eps_m1y*1./(dym1 * dybar)
+    #dvmN = -eps_m1y*1./(dym1 * dybar)
     dvm1 = -eps_m1x*1./(dxm1 * dxbar)
-    dv = eps_m1x/(dxm1*dxbar) + eps_p1x/(dx*dxbar) + eps_m1y/(dym1*dybar) + eps_p1y/(dy*dybar) - drho_dv[sites]
+    dv = eps_m1x/(dxm1*dxbar) + eps_p1x/(dx*dxbar) - drho_dv[sites]
     dvp1 = -eps_p1x*1./(dx * dxbar)
-    dvpN = -eps_p1y*1./(dy * dybar)
+    #dvpN = -eps_p1y*1./(dy * dybar)
+    #dvpN = -eps_p1y*1./(dy * dybar)
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfv_rows = zip(sites, sites, sites, sites, sites)
-    dfv_cols = zip((sites-Nx) % Num, sites-1, sites, sites+1, (sites+Nx) % Num)
-    dfv_data = zip(dvmN, dvm1, dv, dvp1, dvpN)
+    dfv_rows = zip(sites, sites, sites)
+    dfv_cols = zip(sites-1, sites, sites+1)
+    dfv_data = zip(dvm1, dv, dvp1)
 
     rows += list(chain.from_iterable(dfv_rows))
     columns += list(chain.from_iterable(dfv_cols))

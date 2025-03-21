@@ -16,15 +16,10 @@ def get_indices(sys, p, site=False):
     # p: list containing x,y,z coordinates, use zeros for unused dimensions
 
     x, y, z = p
-    xpts, ypts = sys.xpts, sys.ypts
+    xpts = sys.xpts
     nx = len(xpts)
     x = nx-len(xpts[xpts >= x])
     s = x
-
-    if ypts is not None:
-        ny = len(ypts)
-        y = ny-len(ypts[ypts >= y])
-        s += nx*y
 
     if site:
         return s
