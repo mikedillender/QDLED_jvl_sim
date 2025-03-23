@@ -15,7 +15,7 @@ x = np.concatenate((np.linspace(0, dd, 20, endpoint=False),                     
                     np.linspace(dd, t_hil-dd, 40, endpoint=False),                    # material 1
                     np.linspace(t_hil - dd, t_hil + dd, 20, endpoint=False),             # interface 1
                     np.linspace(t_hil + dd, (t_hil+t_htl) - dd, 40, endpoint=False),       # material 2
-                    np.linspace((t_hil+t_htl) - dd, (t_hil+t_htl) + dd, 20, endpoint=False),      # htl-etl interface
+                    np.linspace((t_hil+t_htl) - dd, (t_hil+t_htl) + dd, 40, endpoint=False),      # htl-etl interface
                     np.linspace((t_hil+t_htl) + dd, (t_hil+t_htl+t_etl) - dd, 80, endpoint=False),       # material 2
                     np.linspace((t_hil+t_htl+t_etl) - dd, (t_hil+t_htl+t_etl), 100)))                       # R contact interface
 
@@ -61,7 +61,7 @@ Lcontact_workFcn, Rcontact_workFcn = 4.7, 4.06   # Lcontact work function irrele
 sys.contact_type(Lcontact_type, Rcontact_type, Lcontact_workFcn, Rcontact_workFcn)
 
 # Define the surface recombination velocities for electrons and holes [m/s]
-Scontact = 1.16e4  # [cm/s]
+Scontact = 1.16e5  # [cm/s]
 # non-selective contacts
 Sn_left, Sp_left, Sn_right, Sp_right = Scontact, Scontact, Scontact, Scontact
 # This function specifies the simulation contact recombination velocity
@@ -69,13 +69,13 @@ sys.contact_S(Sn_left, Sp_left, Sn_right, Sp_right)
 
 
 # Specify the applied voltage values
-voltages = np.linspace(0,3,10)
+voltages = np.linspace(0,3,30)
 # Perform I-V calculation
-j = sesame.IVcurve(sys, voltages, '1dQD_V')
+j = sesame.IVcurve(sys, voltages, 't_out/1dQD_V')
 j = j * sys.scaling.current
 
 result = {'v':voltages, 'j':j}
-np.save('qd_IV_values', result)
+np.save('t_out/qd_IV_values', result)
 
 # plot I-V curve
 try:

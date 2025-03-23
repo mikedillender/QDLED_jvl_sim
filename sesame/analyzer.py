@@ -215,8 +215,8 @@ class Analyzer():
 
         sites = self.sites
         X=self.sys.xpts[sites]
-        print("sites",sites,len(sites))
-        print("X",X,len(X))
+        #print("sites",sites,len(sites))
+        #print("X",X,len(X))
 
         show = False
         if fig is None:

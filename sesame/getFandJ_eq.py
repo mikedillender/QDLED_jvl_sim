@@ -62,14 +62,14 @@ def getFandJ_eq(sys, v):
         defectsJ(sys, sys.defects_list, n, p, drho_dv)
 
     # reshape the array as array[y-indices, x-indices]
-    _sites = np.arange(Nx*Ny, dtype=int).reshape(Ny, Nx)
+    _sites = np.arange(Nx, dtype=int)#.reshape(1, Nx)
 
     ###########################################################################
     #       inside the system: 0 < i < Nx-1 and 0 <= j <= Ny-1                  #
     ###########################################################################
 
     # list of the sites inside the system
-    sites = _sites[0:Ny, 1:Nx-1].flatten()
+    sites = _sites[1:Nx-1].flatten()
 
     # lattice distances
     dx = np.tile(sys.dx[1:], Ny)
@@ -112,7 +112,7 @@ def getFandJ_eq(sys, v):
     #                   left contact: i = 0 and 0 <= j <= Ny-1                #
     ###########################################################################
     # list of the sites on the left side
-    sites = _sites[:, 0].flatten()
+    sites = _sites[0].flatten()
 
     if sys.contacts_bcs[0] == "Neutral":
         # update vector with no surface charges
@@ -141,7 +141,7 @@ def getFandJ_eq(sys, v):
     #                 right contact: i = Nx-1 and 0 <= j <= Ny-1              #
     ###########################################################################
     # list of the sites on the right side
-    sites = _sites[:, Nx-1].flatten()
+    sites = _sites[Nx-1].flatten()
 
     if sys.contacts_bcs[1] == "Neutral":
         # update vector with no surface charges

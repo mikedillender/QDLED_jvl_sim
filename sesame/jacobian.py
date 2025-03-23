@@ -67,7 +67,7 @@ def getJ(sys, v, efn, efp):
         defectsJ(sys, sys.defects_list, n, p, drho_dv_s, drho_defn_s, drho_defp_s, dr_defn_s, dr_defp_s, dr_dv_s)
 
     # reshape the array as array[y-indices, x-indices]
-    _sites = np.arange(Nx * Ny, dtype=int).reshape(Ny, Nx)
+    _sites = np.arange(Nx, dtype=int)
 
     def update(r, c, d):
         global rows, columns, data
@@ -132,7 +132,7 @@ def getJ(sys, v, efn, efp):
     # inner part of the system. All the edges containing boundary conditions.
 
     # list of the sites inside the system
-    sites = _sites[0:Ny, 1:Nx - 1].flatten()
+    sites = _sites[1:Nx - 1].flatten()
 
     # lattice distances
     dx = np.tile(sys.dx[1:], Ny)
@@ -198,10 +198,9 @@ def getJ(sys, v, efn, efp):
     dvm1, dv, defn, defp, dvp1= fv_derivatives(dx, dxm1, sys.epsilon, sites)
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfv_rows = np.reshape(np.repeat(3 * sites + 2, 7-2), (len(sites), 7-2)).tolist()
+    dfv_rows = np.reshape(np.repeat(3 * sites + 2, 5), (len(sites), 5)).tolist()
 
-    dfv_cols = zip(3 * (sites - 1) + 2, 3 * sites, 3 * sites + 1, 3 * sites + 2,
-                   3 * (sites + 1) + 2)
+    dfv_cols = zip(3 * (sites - 1) + 2, 3 * sites, 3 * sites + 1, 3 * sites + 2, 3 * (sites + 1) + 2)
 
     dfv_data = zip(dvm1, defn, defp, dv, dvp1)
 
@@ -215,13 +214,13 @@ def getJ(sys, v, efn, efp):
     # left boundary of the system.
 
     # list of the sites on the left side
-    sites = _sites[:, 0].flatten()
-    print("left boundary sites, ",sites)
+    sites = _sites[0].flatten()
+    #print("left boundary sites, ",sites)
 
     # -------------------------- an derivatives --------------------------------
     # s_sp1 = [i for i in zip(sites, sites + 1)]
     defn_s, defn_sp1, dv_s, dv_sp1 = get_jn_derivs(sys, efn, v, sites, sites + 1, sys.dx[0])
-    print(defn_s,defn_sp1,dv_s,dv_sp1)
+    #print(defn_s,defn_sp1,dv_s,dv_sp1)
     defn_s -= sys.Scn[0] * n[sites]
     dv_s -= sys.Scn[0] * n[sites]
 
@@ -263,7 +262,7 @@ def getJ(sys, v, efn, efp):
     # right boundary of the system.
 
     # list of the sites on the right side
-    sites = _sites[:, Nx - 1].flatten()
+    sites = _sites[Nx - 1].flatten()
 
     # -------------------------- bn derivatives --------------------------------
     defn_sm1, defn_s, dv_sm1, dv_s = get_jn_derivs(sys, efn, v, sites - 1, sites, sys.dx[-1])

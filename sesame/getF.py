@@ -51,7 +51,7 @@ def getF(sys, v, efn, efp, veq):
         defectsF(sys, sys.defects_list, n, p, rho, r)
 
     # reshape the array as array[y-indices, x-indices]
-    _sites = np.arange(Nx * Ny, dtype=int).reshape(Ny, Nx)
+    _sites = np.arange(Nx, dtype=int)
 
     ###########################################################################
     #       inside the system: 0 < i < Nx-1 and 0 <= j <= Ny-1                #
@@ -60,26 +60,13 @@ def getF(sys, v, efn, efp, veq):
     # inner part of the system. All the edges containing boundary conditions.
 
     # list of the sites inside the system
-    sites = _sites[0:Ny, 1:Nx - 1].flatten()
+    sites = _sites[1:Nx - 1].flatten()
 
     # lattice distances
     dx = np.tile(sys.dx[1:], Ny)
     dxm1 = np.tile(sys.dx[:-1], Ny)
 
-    #dy = np.repeat(sys.dy,Nx-2)
-    #dym1 = np.repeat(np.roll(sys.dy,1),Nx-2)
-
     dxbar = (dxm1 + dx) / 2.
-    #dybar = (dym1 + dy) / 2.
-    '''
-    infind = np.where(np.isinf(dybar))
-    for i in infind[0]:
-        if np.isinf(dy[i]):
-            dybar[i] = dy[i-Nx] / 2.
-        else:
-            dybar[i] = dy[i] / 2.
-    '''
-
     # compute the currents
     jnx_s = get_jn(sys, efn, v, sites, sites + 1, dx)
     jnx_sm1 = get_jn(sys, efn, v, sites - 1, sites, dxm1)
@@ -104,8 +91,6 @@ def getF(sys, v, efn, efp, veq):
     # ------------------------------ fv ----------------------------------------
     eps_m1x = .5 * (sys.epsilon[sites - 1] + sys.epsilon[sites])
     eps_p1x = .5 * (sys.epsilon[sites + 1] + sys.epsilon[sites])
-    eps_m1y = .5 * (sys.epsilon[(sites - Nx)%N] + sys.epsilon[sites])
-    eps_p1y = .5 * (sys.epsilon[(sites + Nx)%N] + sys.epsilon[sites])
 
     fv = (eps_m1x * (v[sites] - v[sites - 1]) / dxm1 - eps_p1x * (v[sites + 1] - v[sites]) / dx) / dxbar - rho[sites]
 
@@ -115,7 +100,7 @@ def getF(sys, v, efn, efp, veq):
     #                 left boundary: i = 0 and 0 <= j <= Ny-1                 #
     ###########################################################################
     # list of the sites on the left side
-    sites = _sites[:, 0].flatten()
+    sites = _sites[0].flatten()
 
     # compute the currents
     # s_sp1 = [i for i in zip(sites, sites + 1)]
@@ -135,7 +120,7 @@ def getF(sys, v, efn, efp, veq):
     #               right boundary: i = Nx-1 and 0 <= j <= Ny-1                 #
     ###########################################################################
     # list of the sites on the right side
-    sites = _sites[:, Nx - 1].flatten()
+    sites = _sites[Nx - 1].flatten()
 
     # currents
     jnx_sm1 = get_jn(sys, efn, v, sites - 1, sites, sys.dx[-1])
