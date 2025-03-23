@@ -39,8 +39,7 @@ def getJ(sys, v, efn, efp):
     # v_sp1_col = 3*(s+1)+2
     # v_spN_col = 3*(s+Nx)+2
 
-    Nx, Ny = sys.xpts.shape[0], 1
-    Num = Nx * Ny
+    Nx= sys.xpts.shape[0]
     # lists of rows, columns and data that will create the sparse Jacobian
     global rows, columns, data
     rows = []
@@ -135,40 +134,21 @@ def getJ(sys, v, efn, efp):
     sites = _sites[1:Nx - 1].flatten()
 
     # lattice distances
-    dx = np.tile(sys.dx[1:], Ny)
-    dxm1 = np.tile(sys.dx[:-1], Ny)
-
-    #dy = np.repeat(sys.dy,Nx-2)
-    #dym1 = np.repeat(np.roll(sys.dy,1),Nx-2)
-
+    dx = sys.dx[1:]
+    dxm1 = sys.dx[:-1]
     dxbar = (dxm1 + dx) / 2.
-    #dybar = (dym1 + dy) / 2.
-
-    '''
-    infind = np.where(np.isinf(dybar))
-    for i in infind[0]:
-        if np.isinf(dy[i]):
-            dybar[i] = dy[i-Nx] / 2.
-        else:
-            dybar[i] = dy[i] / 2.'''
 
     # ------------------------ fn derivatives ----------------------------------
     # get the derivatives of jx_s, jx_sm1, jy_s, jy_smN
     djx_s = get_jn_derivs(sys, efn, v, sites, sites + 1, dx)
     djx_sm1 = get_jn_derivs(sys, efn, v, sites - 1, sites, dxm1)
 
-    #djy_s = get_jn_derivs(sys, efn, v, sites, (sites + Nx) % Num , dy)
-    #djy_smN = get_jn_derivs(sys, efn, v, (sites - Nx) % Num, sites, dym1)
-
     defn_sm1, dv_sm1, defn_s, defp_s, dv_s, defn_sp1, dv_sp1 =f_derivatives('electrons', djx_s, djx_sm1, dxbar, sites)
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfn_rows = np.reshape(np.repeat(3 * sites, 11-4), (len(sites), 11-4)).tolist()
-
+    dfn_rows = np.reshape(np.repeat(3 * sites, 7), (len(sites), 7)).tolist()
     dfn_cols = zip(3 * (sites - 1), 3 * (sites - 1) + 2,
                    3 * sites, 3 * sites + 1, 3 * sites + 2, 3 * (sites + 1), 3 * (sites + 1) + 2)
-    #dfn_rows = dfn_rows[2:-2]
-    #dfn_cols = dfn_cols[2:-2]
     dfn_data = zip(defn_sm1, dv_sm1, defn_s, defp_s, dv_s, defn_sp1, dv_sp1)
 
     update(dfn_rows, dfn_cols, dfn_data)
@@ -178,18 +158,16 @@ def getJ(sys, v, efn, efp):
     djx_s = get_jp_derivs(sys, efp, v, sites, sites + 1, dx)
     djx_sm1 = get_jp_derivs(sys, efp, v, sites - 1, sites, dxm1)
 
-    #djy_s = get_jp_derivs(sys, efp, v, sites, (sites + Nx) % Num, dy)
-    #djy_smN = get_jp_derivs(sys, efp, v, (sites - Nx) % Num, sites, dym1)
-
-    defp_sm1, dv_sm1, defn_s, defp_s, dv_s, defp_sp1, dv_sp1= \
-        f_derivatives('holes', djx_s, djx_sm1, dxbar, sites)
+    defp_sm1, dv_sm1, defn_s, defp_s, dv_s, defp_sp1, dv_sp1 = f_derivatives('holes', djx_s, djx_sm1, dxbar, sites)
 
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfp_rows = np.reshape(np.repeat(3 * sites + 1, 11-4), (len(sites), 11-4)).tolist()
+    dfp_rows = np.reshape(np.repeat(3 * sites + 1, 7), (len(sites), 7)).tolist()
+    print(dfp_rows)
 
     dfp_cols = zip(3 * (sites - 1) + 1, 3 * (sites - 1) + 2,
                    3 * sites, 3 * sites + 1, 3 * sites + 2, 3 * (sites + 1) + 1, 3 * (sites + 1) + 2)
+
     dfp_data = zip(defp_sm1, dv_sm1, defn_s, defp_s, dv_s, defp_sp1, dv_sp1)
 
     update(dfp_rows, dfp_cols, dfp_data)
@@ -215,12 +193,10 @@ def getJ(sys, v, efn, efp):
 
     # list of the sites on the left side
     sites = _sites[0].flatten()
-    #print("left boundary sites, ",sites)
 
     # -------------------------- an derivatives --------------------------------
-    # s_sp1 = [i for i in zip(sites, sites + 1)]
+
     defn_s, defn_sp1, dv_s, dv_sp1 = get_jn_derivs(sys, efn, v, sites, sites + 1, sys.dx[0])
-    #print(defn_s,defn_sp1,dv_s,dv_sp1)
     defn_s -= sys.Scn[0] * n[sites]
     dv_s -= sys.Scn[0] * n[sites]
 

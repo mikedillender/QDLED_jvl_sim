@@ -122,7 +122,8 @@ class Builder():
     def add_acceptor(self, density, location=lambda pos: True):
         self.rho[np.where(location(self.xpts))[0]] -= density / self.scaling.density
 
-
+    def add_qd(self, location=lambda pos: True):
+        self.qd_sites=(np.where(location(self.xpts))[0])
 
     def contact_S(self, Scn_left, Scp_left, Scn_right, Scp_right):
         v = self.scaling.velocity

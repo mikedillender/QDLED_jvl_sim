@@ -7,6 +7,13 @@ from scipy.io import savemat
 t_hil = 20*1e-7
 t_htl = 20e-7
 t_etl = 40*1e-7
+t_bqd = t_hil+t_htl
+r_qdc = 2e-7
+r_qds = 0.25e-7
+r_qd = r_qdc+r_qds
+t_aqd=t_hil+t_htl+4*(r_qd)
+t_total=t_aqd+t_etl
+print("t_total=",t_total)
 
 # Heterojunctions require dense mesh near the interface
 dd = 1.5e-7   # 2*dd is the distance over which mesh is refined
@@ -14,10 +21,12 @@ dd = 1.5e-7   # 2*dd is the distance over which mesh is refined
 x = np.concatenate((np.linspace(0, dd, 20, endpoint=False),                        # L contact interface
                     np.linspace(dd, t_hil-dd, 40, endpoint=False),                    # material 1
                     np.linspace(t_hil - dd, t_hil + dd, 20, endpoint=False),             # interface 1
-                    np.linspace(t_hil + dd, (t_hil+t_htl) - dd, 40, endpoint=False),       # material 2
-                    np.linspace((t_hil+t_htl) - dd, (t_hil+t_htl) + dd, 40, endpoint=False),      # htl-etl interface
-                    np.linspace((t_hil+t_htl) + dd, (t_hil+t_htl+t_etl) - dd, 80, endpoint=False),       # material 2
-                    np.linspace((t_hil+t_htl+t_etl) - dd, (t_hil+t_htl+t_etl), 100)))                       # R contact interface
+                    np.linspace(t_hil + dd, (t_bqd) - dd, 40, endpoint=False),       # material 2
+                    np.linspace((t_bqd) - dd, (t_bqd), 40, endpoint=False),      # htl-qd interface
+                    np.linspace((t_bqd)+r_qd, (t_aqd)-r_qd, 2, endpoint=False),      # QD
+                    np.linspace((t_aqd), (t_aqd) + dd, 40, endpoint=False),      # qd-etl interface
+                    np.linspace((t_aqd) + dd, (t_total) - dd, 80, endpoint=False),       # material 2
+                    np.linspace((t_total) - dd, (t_total), 100)))                       # R contact interface
 
 # Build system
 sys = sesame.Builder(x)
@@ -39,15 +48,16 @@ etl = {'Nc': 2.5e19*pow(.24,1.5), 'Nv': 2.5e19*pow(.59,1.5), 'Eg':3.4, 'epsilon'
 
 # CdS region
 hil_region = lambda x: x<=t_hil
-# CdTe region
-htl_region = lambda x: np.logical_and(x>t_hil, x<=t_hil+t_htl)
-etl_region = lambda x: (x>t_hil+t_htl)
+htl_region = lambda x: np.logical_and(x>t_hil, x<=t_bqd)
+qd_region = lambda x: np.logical_and(t_bqd<x, x<t_aqd)
+etl_region = lambda x: (x>=t_aqd)
 
 # Add the material to the system
 sys.add_material(etl, etl_region)     # adding CdS
 sys.add_material(htl, htl_region)     # adding CdTe
 sys.add_material(hil, hil_region)     # adding CdTe
-
+sys.add_material(qdc, qd_region)     # adding CdTe
+sys.add_qd(qd_region)
 # Add the donors
 sys.add_donor(2.81e19, etl_region)
 # Add the acceptors
@@ -69,7 +79,7 @@ sys.contact_S(Sn_left, Sp_left, Sn_right, Sp_right)
 
 
 # Specify the applied voltage values
-voltages = np.linspace(0,3,30)
+voltages = np.linspace(0,2,10)
 # Perform I-V calculation
 j = sesame.IVcurve(sys, voltages, 't_out/1dQD_V')
 j = j * sys.scaling.current
