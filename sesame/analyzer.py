@@ -149,7 +149,7 @@ class Analyzer():
         X1 = self.sys.xpts[1:] - self.sys.dx*self.sys.scaling.length / 2
         V=self.v*self.sys.scaling.energy
         dv=V[1:]-V[:-1]
-        E=dv/self.sys.dx
+        E=-dv/self.sys.dx
         V=V-V[0]
         show = False
         if fig is None:

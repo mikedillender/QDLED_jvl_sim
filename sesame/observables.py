@@ -144,6 +144,15 @@ def get_jn(sys, efn, v, sites_i, sites_ip1, dl):
         vd=vd/sys.scaling.current
         jnt_qd = vd*(n_qd2-n_qd1)
 
+        n_etl=exp(efnp0[qd2_i+1]+vp0[qd2_i+1])
+        dphi=(v[sys.qd_sites[1]+1]-v[sys.qd_sites[1]]) * sys.scaling.energy
+        alpha_phi=3e-9
+        lambdae=(((cts.e*sys.scaling.density)*(np.pi*sys.scaling.density*sys.rqd**3)))
+        E_htl=-dphi/sys.rqd
+        F0=5e6
+        mu_E=np.sign(E_htl)*alpha_phi*np.sqrt(np.pow(np.abs(E_htl),3)/F0)*lambdae/sys.scaling.current
+        jni_qd=mu_E*(sys.qd_density-n_qd2)*n_etl
+
 
         #n = sys.Nc[sites] * exp(+sys.bl[sites] + efn[sites] + v[sites])
 
@@ -154,8 +163,8 @@ def get_jn(sys, efn, v, sites_i, sites_ip1, dl):
          -1 * mu * exp(efnp1)*(-(efnp0 - efnp1))     / dl / (-exp(-vp0) * (1 + .5 * dv0 + 1 / 6. * (dv0) ** 2)) * (np.abs(dv0) < tol2)) * (np.abs(defn) < tol3)
 
     if (len(sites_i) > 1):
-        print('jn was ',jn[qd1_i],", now ",jnt_qd)
-        jn[qd_links]/=100.
+        #print('jn was ',jn[qd1_i],", now ",jnt_qd)
+        #jn[qd_links]/=100.
         jn[qd1_i]=jnt_qd
 
     #if(len(sites_i)>1):
@@ -203,18 +212,28 @@ def get_jp(sys, efp, v, sites_i, sites_ip1, dl):
     defp = efpp1 - efpp0
 
     mu = sys.mu_h[sites_i]
-
+    #V=sys.V
     if (len(sites_i) > 1):
         qd1_i=sys.qd_sites[0] if sites_i[0] == 0 else sys.qd_sites[0]-1
+        qd1_j=sys.qd_sites[0] if sites_i[0] == 0 else sys.qd_sites[0]-1
         qd_links=sys.qd_links if sites_i[0] ==0 else sys.qd_links-1
         qd2_i=qd1_i+1
-        vd=(7.1e9*4.5e-7)*(cts.e*1e19)
+        vd=(7.1e9*4.5e-7)*(cts.e*sys.scaling.density)
         vd=-vd/sys.scaling.current
-        lambdah=(cts.e)
         p_qd1=exp(efpp0[qd1_i]-vp0[qd1_i])
         p_qd2=exp(efpp0[qd2_i]-vp0[qd2_i])
         jpt_qd=vd*(p_qd2-p_qd1)
-        #print(p_qd1,p_qd2,vd)
+
+        p_htl=exp(efpp0[qd1_i-1]-vp0[qd1_i-1])
+        dphi=(v[sys.qd_sites[0]]-v[sys.qd_sites[0]-1]) * sys.scaling.energy
+        alpha_phi=3e-9
+        lambdah=(((cts.e*sys.scaling.density)*(np.pi*sys.scaling.density*sys.rqd**3)))
+        E_htl=-dphi/sys.rqd
+        F0=5e6
+        mu_E=np.sign(E_htl)*alpha_phi*np.sqrt(np.pow(np.abs(E_htl),3)/F0)*lambdah/sys.scaling.current
+        jpi_qd=mu_E*(sys.qd_density-p_qd1)*p_htl
+        #print("field at interface is ",E_htl,", p_htl = ",p_htl,", p_qd1 ",p_qd1," lambdah = ",lambdah,", mu_f = ",mu_E," jpi_qd = ",jpi_qd)
+
 
     jp = (mu * exp(efpp1) * (1 - exp(efpp0-efpp1)) / dl * dv / (-exp(vp0) * (1 - exp(-dv))) * (np.abs(dv0) >= tol2) + \
           mu * exp(efpp1) * (1 - exp(efpp0-efpp1)) / dl * 1 / (-exp(vp0) * (1 - .5*(dv0) + 1/6.*(dv0)**2.)) * (np.abs(dv0) < tol2)) * (np.abs(defp) >= tol3) + \
@@ -222,8 +241,9 @@ def get_jp(sys, efp, v, sites_i, sites_ip1, dl):
           mu * exp(efpp1) * ( -(efpp0 - efpp1))    / dl * 1 / (-exp(vp0) * (1 - .5 * (dv0) + 1 / 6. * (dv0) ** 2.)) * (np.abs(dv0) < tol2)) * (np.abs(defp) < tol3)
 
     if (len(sites_i) > 1):
-        jp[qd_links]/=100.
+        #jp[qd_links]/=100.
         jp[qd1_i]=jpt_qd
+        print("jp at htl interface was ",jp[qd1_i-1],', now ', jpi_qd, " (p_qd1 = ",p_qd1,")")
     #if(len(sites_i)>1):
     #    print('hi',jpt_qd,jp[qd1_i])
 
@@ -285,11 +305,11 @@ def get_jn_derivs(sys, efn, v, sites_i, sites_ip1, dl):
               / (6 + vp0 ** 2 + vp0 * (3 - 2 * vp1) + vp1 * (-3 + vp1)) ** 2 * (np.abs(dv0) < tol2)) * (np.abs(defn) < tol3)
 
     if (len(sites_i) > 1):
-        dv_i[qd_links]/=100.
+        '''dv_i[qd_links]/=100.
         dv_ip1[qd_links]/=100.
         defn_i[qd_links]/=100.
         defn_ip1[qd_links]/=100.
-        print('dv was ',dv_i[qd1_i],", now ",-vd*n_qd1)
+        print('dv was ',dv_i[qd1_i],", now ",-vd*n_qd1)'''
         dv_i[qd1_i] = -vd*n_qd1/mu[qd1_i]
         dv_ip1[qd1_i] = vd*n_qd2/mu[qd1_i]
         defn_i[qd1_i] = -vd*n_qd1/mu[qd1_i]
@@ -355,10 +375,10 @@ def get_jp_derivs(sys, efp, v, sites_i, sites_ip1, dl):
 
 
     if (len(sites_i) > 1):
-        dv_i[qd_links]/=100.
+        '''dv_i[qd_links]/=100.
         dv_ip1[qd_links]/=100.
         defp_i[qd_links]/=100.
-        defp_ip1[qd_links]/=100.
+        defp_ip1[qd_links]/=100'''
         dv_i[qd1_i] = vd*p_qd1/mu[qd1_i]
         dv_ip1[qd1_i] = -vd*p_qd2/mu[qd1_i]
         defp_i[qd1_i] = vd*p_qd1/mu[qd1_i]
