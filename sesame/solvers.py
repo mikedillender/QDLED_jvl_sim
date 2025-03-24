@@ -210,6 +210,8 @@ class Solver():
             spsolve = mumps.spsolve
         else:
             J = J.tocsr()
+        #print("J: ",J)
+        #print("F: ",f)
         dx = spsolve(J, f)
         return dx
 

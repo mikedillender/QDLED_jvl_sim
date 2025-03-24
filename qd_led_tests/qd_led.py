@@ -13,7 +13,7 @@ r_qds = 0.25e-7
 r_qd = r_qdc+r_qds
 t_aqd=t_hil+t_htl+4*(r_qd)
 t_total=t_aqd+t_etl
-print("t_total=",t_total)
+print("t_total = ",t_total,"|  rqd = ",r_qd, "| taqd = ",t_aqd, "| tbqd = ", t_bqd)
 
 # Heterojunctions require dense mesh near the interface
 dd = 1.5e-7   # 2*dd is the distance over which mesh is refined
@@ -23,7 +23,7 @@ x = np.concatenate((np.linspace(0, dd, 20, endpoint=False),                     
                     np.linspace(t_hil - dd, t_hil + dd, 20, endpoint=False),             # interface 1
                     np.linspace(t_hil + dd, (t_bqd) - dd, 40, endpoint=False),       # material 2
                     np.linspace((t_bqd) - dd, (t_bqd), 40, endpoint=False),      # htl-qd interface
-                    np.linspace((t_bqd)+r_qd, (t_aqd)-r_qd, 2, endpoint=False),      # QD
+                    [(t_bqd)+r_qd, (t_aqd)-r_qd],      # QD
                     np.linspace((t_aqd), (t_aqd) + dd, 40, endpoint=False),      # qd-etl interface
                     np.linspace((t_aqd) + dd, (t_total) - dd, 80, endpoint=False),       # material 2
                     np.linspace((t_total) - dd, (t_total), 100)))                       # R contact interface
@@ -81,11 +81,11 @@ sys.contact_S(Sn_left, Sp_left, Sn_right, Sp_right)
 # Specify the applied voltage values
 voltages = np.linspace(0,2,10)
 # Perform I-V calculation
-j = sesame.IVcurve(sys, voltages, 't_out/1dQD_V')
+j = sesame.IVcurve(sys, voltages, 't_out3/1dQD_V')
 j = j * sys.scaling.current
 
 result = {'v':voltages, 'j':j}
-np.save('t_out/qd_IV_values', result)
+np.save('t_out3/qd_IV_values', result)
 
 # plot I-V curve
 try:

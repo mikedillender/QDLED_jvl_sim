@@ -5,6 +5,7 @@
 
 from numpy import exp
 import numpy as np
+import scipy.constants as cts
 
 
 def get_n(sys, efn, v, sites):
@@ -133,12 +134,32 @@ def get_jn(sys, efn, v, sites_i, sites_ip1, dl):
     defn = efnp1 - efnp0
     mu = sys.mu_e[sites_i]
 
+    if (len(sites_i) > 1):
+        qd1_i=sys.qd_sites[0] if sites_i[0] == 0 else sys.qd_sites[0]-1
+        qd_links=sys.qd_links if sites_i[0] ==0 else sys.qd_links-1
+        qd2_i=qd1_i+1
+        vd=(4e10*4.5e-7)*(cts.e*1e19)
+        n_qd1=exp(efnp0[qd1_i]+vp0[qd1_i])
+        n_qd2=exp(efnp0[qd2_i]+vp0[qd2_i])
+        vd=vd/sys.scaling.current
+        jnt_qd = vd*(n_qd2-n_qd1)
+
+
+        #n = sys.Nc[sites] * exp(+sys.bl[sites] + efn[sites] + v[sites])
+
 
     jn = (    mu * exp(efnp1)*(1 - exp(efnp0-efnp1)) / dl * dv / (-exp(-vp0) * (1 - exp(dv))) * (np.abs(dv0) >= tol2) + \
          -1 * mu * exp(efnp1)*(1 - exp(efnp0-efnp1)) / dl / (-exp(-vp0) * (1 + .5 * dv0 + 1/6.*(dv0)**2)) * (np.abs(dv0) < tol2)) * (np.abs(defn)>=tol3) + \
          (    mu * exp(efnp1)*(-(efnp0 - efnp1))     / dl * dv / (-exp(-vp0) * (1 - exp(dv))) * (np.abs(dv0) >= tol2) + \
          -1 * mu * exp(efnp1)*(-(efnp0 - efnp1))     / dl / (-exp(-vp0) * (1 + .5 * dv0 + 1 / 6. * (dv0) ** 2)) * (np.abs(dv0) < tol2)) * (np.abs(defn) < tol3)
 
+    if (len(sites_i) > 1):
+        print('jn was ',jn[qd1_i],", now ",jnt_qd)
+        jn[qd_links]/=100.
+        jn[qd1_i]=jnt_qd
+
+    #if(len(sites_i)>1):
+    #    print('hi',vd,jn[qd1_i])
 
     return jn
 
@@ -183,11 +204,28 @@ def get_jp(sys, efp, v, sites_i, sites_ip1, dl):
 
     mu = sys.mu_h[sites_i]
 
+    if (len(sites_i) > 1):
+        qd1_i=sys.qd_sites[0] if sites_i[0] == 0 else sys.qd_sites[0]-1
+        qd_links=sys.qd_links if sites_i[0] ==0 else sys.qd_links-1
+        qd2_i=qd1_i+1
+        vd=(7.1e9*4.5e-7)*(cts.e*1e19)
+        vd=-vd/sys.scaling.current
+        lambdah=(cts.e)
+        p_qd1=exp(efpp0[qd1_i]-vp0[qd1_i])
+        p_qd2=exp(efpp0[qd2_i]-vp0[qd2_i])
+        jpt_qd=vd*(p_qd2-p_qd1)
+        #print(p_qd1,p_qd2,vd)
+
     jp = (mu * exp(efpp1) * (1 - exp(efpp0-efpp1)) / dl * dv / (-exp(vp0) * (1 - exp(-dv))) * (np.abs(dv0) >= tol2) + \
           mu * exp(efpp1) * (1 - exp(efpp0-efpp1)) / dl * 1 / (-exp(vp0) * (1 - .5*(dv0) + 1/6.*(dv0)**2.)) * (np.abs(dv0) < tol2)) * (np.abs(defp) >= tol3) + \
          (mu * exp(efpp1) * ( -(efpp0 - efpp1))    / dl * dv / (-exp(vp0) * (1 - exp(-dv))) * (np.abs(dv0) >= tol2) + \
           mu * exp(efpp1) * ( -(efpp0 - efpp1))    / dl * 1 / (-exp(vp0) * (1 - .5 * (dv0) + 1 / 6. * (dv0) ** 2.)) * (np.abs(dv0) < tol2)) * (np.abs(defp) < tol3)
 
+    if (len(sites_i) > 1):
+        jp[qd_links]/=100.
+        jp[qd1_i]=jpt_qd
+    #if(len(sites_i)>1):
+    #    print('hi',jpt_qd,jp[qd1_i])
 
     return jp
 
@@ -208,10 +246,18 @@ def get_jn_derivs(sys, efn, v, sites_i, sites_ip1, dl):
     efnp1 = efn[sites_ip1]
     defn = efnp1 - efnp0
     mu = sys.mu_e[sites_i]
-
     ev0 = exp(-vp0)
-    ep1 = exp(efnp1)
-    ep0 = exp(efnp0)
+
+    if (len(sites_i) > 1):
+        qd1_i=sys.qd_sites[0] if sites_i[0] == 0 else sys.qd_sites[0]-1
+        qd_links=sys.qd_links if sites_i[0] ==0 else sys.qd_links-1
+        qd2_i=qd1_i+1
+        vd=(4e10*4.5e-7)*(cts.e*1e19)
+        vd=vd/sys.scaling.current
+        n_qd1=exp(efnp0[qd1_i]+vp0[qd1_i])
+        n_qd2=exp(efnp0[qd2_i]+vp0[qd2_i])
+        jnt_qd=vd*(n_qd2-n_qd1)
+
 
 
     defn_i = (1. / dl * exp(efnp0 + vp0) * (dv) / (1 - exp(dv)) * (np.abs(dv0) >= tol2) + \
@@ -238,6 +284,17 @@ def get_jn_derivs(sys, efn, v, sites_i, sites_ip1, dl):
               -6 * exp(vp0) * exp(efnp1) * (-(efnp0 - efnp1)) / dl * (3 + 2 * vp0 - 2 * vp1) \
               / (6 + vp0 ** 2 + vp0 * (3 - 2 * vp1) + vp1 * (-3 + vp1)) ** 2 * (np.abs(dv0) < tol2)) * (np.abs(defn) < tol3)
 
+    if (len(sites_i) > 1):
+        dv_i[qd_links]/=100.
+        dv_ip1[qd_links]/=100.
+        defn_i[qd_links]/=100.
+        defn_ip1[qd_links]/=100.
+        print('dv was ',dv_i[qd1_i],", now ",-vd*n_qd1)
+        dv_i[qd1_i] = -vd*n_qd1/mu[qd1_i]
+        dv_ip1[qd1_i] = vd*n_qd2/mu[qd1_i]
+        defn_i[qd1_i] = -vd*n_qd1/mu[qd1_i]
+        defn_ip1[qd1_i] = vd*n_qd2/mu[qd1_i]
+
 
     return mu * defn_i, mu * defn_ip1, mu * dv_i, mu * dv_ip1
 
@@ -259,8 +316,18 @@ def get_jp_derivs(sys, efp, v, sites_i, sites_ip1, dl):
     mu = sys.mu_h[sites_i]
 
     ev0 = exp(vp0)
-    ep1 = exp(efpp1)
-    ep0 = exp(efpp0)
+
+
+    if (len(sites_i) > 1):
+        qd1_i=sys.qd_sites[0] if sites_i[0] == 0 else sys.qd_sites[0]-1
+        qd_links=sys.qd_links if sites_i[0] ==0 else sys.qd_links-1
+        qd2_i=qd1_i+1
+        vd=(7.1e9*4.5e-7)*(cts.e*1e19)
+        vd=-vd/sys.scaling.current
+
+        p_qd1=exp(efpp0[qd1_i]-vp0[qd1_i])
+        p_qd2=exp(efpp0[qd2_i]-vp0[qd2_i])
+
 
     defp_i = -(exp(efpp0 - vp0) * dv / (dl * (1 - exp(-dv))) * (np.abs(dv0) >= tol2) + \
               exp(efpp0 - vp0) / (dl) / (1 - .5*(vp0-vp1) + 1/6.*(vp0-vp1)**2.) * (np.abs(dv0) < tol2)) * (np.abs(defp)>=tol3) + \
@@ -286,6 +353,16 @@ def get_jp_derivs(sys, efp, v, sites_i, sites_ip1, dl):
               6 * exp(efpp0) * (-(efpp1 - efpp0)) / dl * (-exp(-vp0)) * (-3 + 2 * vp0 - 2 * vp1) \
               / (6 + vp0 ** 2 + vp1 * (3 + vp1) - vp0 * (3 + 2 * vp1)) ** 2 * (np.abs(dv0) < tol2)) * (np.abs(defp) < tol3)
 
+
+    if (len(sites_i) > 1):
+        dv_i[qd_links]/=100.
+        dv_ip1[qd_links]/=100.
+        defp_i[qd_links]/=100.
+        defp_ip1[qd_links]/=100.
+        dv_i[qd1_i] = vd*p_qd1/mu[qd1_i]
+        dv_ip1[qd1_i] = -vd*p_qd2/mu[qd1_i]
+        defp_i[qd1_i] = vd*p_qd1/mu[qd1_i]
+        defp_ip1[qd1_i] = -vd*p_qd2/mu[qd1_i]
 
     return mu * defp_i, mu * defp_ip1, mu * dv_i, mu * dv_ip1
 

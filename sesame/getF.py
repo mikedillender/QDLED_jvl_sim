@@ -63,8 +63,8 @@ def getF(sys, v, efn, efp, veq):
     sites = _sites[1:Nx - 1].flatten()
 
     # lattice distances
-    dx = np.tile(sys.dx[1:], Ny)
-    dxm1 = np.tile(sys.dx[:-1], Ny)
+    dx = sys.dx[1:]
+    dxm1 = sys.dx[:-1]
 
     dxbar = (dxm1 + dx) / 2.
     # compute the currents

@@ -88,7 +88,9 @@ class Builder():
             if not callable(val):
                 arrays[key][s] = val
             else:
-                arrays[key][s] = (val(pos) * location(pos))[s]
+                print("not callable? ")
+                exit()
+            #    arrays[key][s] = (val(pos) * location(pos))[s]
 
         self.Nc[s] /= N
         self.Nv[s] /= N
@@ -124,6 +126,12 @@ class Builder():
 
     def add_qd(self, location=lambda pos: True):
         self.qd_sites=(np.where(location(self.xpts))[0])
+        self.rqd=(self.xpts[self.qd_sites[1]]-self.xpts[self.qd_sites[0]])/2
+        self.qd_links=self.qd_sites.copy()
+        self.qd_links=np.insert(self.qd_links,0,self.qd_links[0]-1)
+        print("r_qd = ",self.rqd,', sites ',self.qd_sites, ", links ",self.qd_links)
+        #print(self.xpts[self.qd_sites[0]-1:self.qd_sites[1]+4])
+        #print(self.xpts[self.qd_sites])
 
     def contact_S(self, Scn_left, Scp_left, Scn_right, Scp_right):
         v = self.scaling.velocity

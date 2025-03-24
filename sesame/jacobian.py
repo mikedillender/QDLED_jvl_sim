@@ -129,7 +129,6 @@ def getJ(sys, v, efn, efp):
     ###########################################################################
     # We compute fn, fp, fv derivatives. Those functions are only defined on the
     # inner part of the system. All the edges containing boundary conditions.
-
     # list of the sites inside the system
     sites = _sites[1:Nx - 1].flatten()
 
@@ -150,7 +149,6 @@ def getJ(sys, v, efn, efp):
     dfn_cols = zip(3 * (sites - 1), 3 * (sites - 1) + 2,
                    3 * sites, 3 * sites + 1, 3 * sites + 2, 3 * (sites + 1), 3 * (sites + 1) + 2)
     dfn_data = zip(defn_sm1, dv_sm1, defn_s, defp_s, dv_s, defn_sp1, dv_sp1)
-
     update(dfn_rows, dfn_cols, dfn_data)
 
     # ------------------------ fp derivatives ----------------------------------
@@ -163,7 +161,7 @@ def getJ(sys, v, efn, efp):
 
     # update the sparse matrix row and columns for the inner part of the system
     dfp_rows = np.reshape(np.repeat(3 * sites + 1, 7), (len(sites), 7)).tolist()
-    print(dfp_rows)
+    #print(dfp_rows)
 
     dfp_cols = zip(3 * (sites - 1) + 1, 3 * (sites - 1) + 2,
                    3 * sites, 3 * sites + 1, 3 * sites + 2, 3 * (sites + 1) + 1, 3 * (sites + 1) + 2)
@@ -188,8 +186,7 @@ def getJ(sys, v, efn, efp):
     ###########################################################################
     #                 left boundary: i = 0 and 0 <= j <= Ny-1                 #
     ###########################################################################
-    # We compute an, ap, av derivatives. Those functions are only defined on the
-    # left boundary of the system.
+    # We compute an, ap, av derivatives, only defined on the left boundary of the system.
 
     # list of the sites on the left side
     sites = _sites[0].flatten()
@@ -201,12 +198,9 @@ def getJ(sys, v, efn, efp):
     dv_s -= sys.Scn[0] * n[sites]
 
     # update the sparse matrix row and columns
-    dan_rows = zip(3 * sites, 3 * sites, 3 * sites, 3 * sites)
-    #          zip(0,0,0,0)
-    dan_cols = zip(3 * sites, 3 * sites + 2, 3 * (sites + 1), 3 * (sites + 1) + 2)
-    #          zip(0,2,3,5)
+    dan_rows = zip(3 * sites, 3 * sites, 3 * sites, 3 * sites)  # zip(0,0,0,0)
+    dan_cols = zip(3 * sites, 3 * sites + 2, 3 * (sites + 1), 3 * (sites + 1) + 2)  # zip(0,2,3,5)
     dan_data = zip(defn_s, dv_s, defn_sp1, dv_sp1)
-    #          zip(0,2,3,5)
     update(dan_rows, dan_cols, dan_data)
 
     #print(list(dan_rows),list(dan_cols),list(dan_data))
@@ -219,7 +213,6 @@ def getJ(sys, v, efn, efp):
     dap_rows = zip(3 * sites + 1, 3 * sites + 1, 3 * sites + 1, 3 * sites + 1)
     dap_cols = zip(3 * sites + 1, 3 * sites + 2, 3 * (sites + 1) + 1, 3 * (sites + 1) + 2)
     dap_data = zip(defp_s, dv_s, defp_sp1, dv_sp1)
-
     update(dap_rows, dap_cols, dap_data)
 
     # -------------------------- av derivatives --------------------------------
@@ -234,10 +227,7 @@ def getJ(sys, v, efn, efp):
     ###########################################################################
     #                right boundary: i = Nx-1 and 0 <= j <= Ny-1                #
     ###########################################################################
-    # We compute bn, bp, bv derivatives. Those functions are only defined on the
-    # right boundary of the system.
-
-    # list of the sites on the right side
+    # We compute bn, bp, bv derivatives, only defined on the right boundary of the system.
     sites = _sites[Nx - 1].flatten()
 
     # -------------------------- bn derivatives --------------------------------
@@ -245,7 +235,6 @@ def getJ(sys, v, efn, efp):
     defn_s += sys.Scn[1] * n[sites]
     dv_s += sys.Scn[1] * n[sites]
 
-    # update the sparse matrix row and columns
     dbn_rows = zip(3 * sites, 3 * sites, 3 * sites, 3 * sites)
     dbn_cols = zip(3 * (sites - 1), 3 * (sites - 1) + 2, 3 * sites, 3 * sites + 2)
     dbn_data = zip(defn_sm1, dv_sm1, defn_s, dv_s)
@@ -257,21 +246,15 @@ def getJ(sys, v, efn, efp):
     defp_s += sys.Scp[1] * p[sites]
     dv_s += sys.Scp[1] * p[sites]
 
-    # update the sparse matrix row and columns
     dbp_rows = zip(3 * sites + 1, 3 * sites + 1, 3 * sites + 1, 3 * sites + 1)
     dbp_cols = zip(3 * (sites - 1) + 1, 3 * (sites - 1) + 2, 3 * sites + 1, 3 * sites + 2)
     dbp_data = zip(defp_sm1, dv_sm1, defp_s, dv_s)
-
-    #print("update: ", len(rows), len(columns), len(data))
     update(dbp_rows, dbp_cols, dbp_data)
-    #print("update: ", len(rows), len(columns), len(data))
-    #print(" ")
 
     # -------------------------- bv derivatives --------------------------------
     dbv_rows = (3 * sites + 2).tolist()
     dbv_cols = (3 * sites + 2).tolist()
     dbv_data = np.ones((len(sites, ))).tolist()  # dv_s = 0
-
     rows += dbv_rows
     columns += dbv_cols
     data += dbv_data

@@ -4,6 +4,7 @@
 # LICENSE.rst found in the top-level directory of this distribution.
 
 from scipy.interpolate import InterpolatedUnivariateSpline as spline, interp2d
+import scipy.constants as cts
 from .utils import Bresenham, get_indices
 from .observables import *
 from .defects import defectsF
@@ -124,7 +125,7 @@ class Analyzer():
         ax = fig.add_subplot(121)
 
         vt = self.sys.scaling.energy
-        X = X * 1e4  # in um
+        X = X * 1e7  # in um
 
         l1, = ax.plot(X, vt*self.efn[sites], lw=2, color='#2e89cf', ls='--')
         l2, = ax.plot(X, vt*self.efp[sites], lw=2, color='#cf392e', ls='--')
@@ -135,11 +136,39 @@ class Analyzer():
                               r'$\mathregular{E_{F_p}}$'])
 
 
-        ax.set_xlabel(r'Position [$\mathregular{\mu m}$]')
+        ax.set_xlabel(r'Position [$\mathregular{nm}$]')
         ax.set_ylabel('Energy [eV]')
 
         #if show:
         #    plt.show()
+
+    def field_diagram(self, fig=None):
+
+        sites = self.sites
+        X0 = self.sys.xpts
+        X1 = self.sys.xpts[1:] - self.sys.dx*self.sys.scaling.length / 2
+        V=self.v*self.sys.scaling.energy
+        dv=V[1:]-V[:-1]
+        E=dv/self.sys.dx
+        V=V-V[0]
+        show = False
+        if fig is None:
+            fig = plt.figure()
+            show = True
+
+        # add axis to figure
+        ax = fig.add_subplot(121)
+        l1, = ax.plot(X0*1e7,V, lw=2, color='#2e89cf', ls='-')
+        ax.set_title(r'$\mathregular{V(x)}$')
+        ax.set_xlabel(r'Position [$\mathregular{nm}$]')
+        ax = fig.add_subplot(122)
+        l2, = ax.plot(X1*1e7,E, lw=2, color='#2e89cf', ls='-')
+        ax.set_title(r'$\mathregular{E(x)}$')
+        ax.set_xlabel(r'Position [$\mathregular{nm}$]')
+
+
+        if show:
+            plt.show()
 
     def electron_density(self, location=None):
         """
@@ -196,22 +225,6 @@ class Analyzer():
         return p
 
     def carrier_densities(self, location, fig=None):
-        """
-        Compute the band diagram between two points defining a line. Display a
-        plot if fig is None.
-
-        Parameters
-        ----------
-        location: array-like ((x1,y1), (x2,y2))
-            Tuple of two points defining a line over which to compute a band
-            diagram.
-
-        fig: Maplotlib figure
-            A plot is added to it if given. If not given, a new one is created and
-            displayed.
-
-        """
-
 
         sites = self.sites
         X=self.sys.xpts[sites]
@@ -226,18 +239,18 @@ class Analyzer():
         # add axis to figure
         ax = fig.add_subplot(122)
 
-        X = X * 1e4  # in um
+        X = X * 1e7  # in nm
 
         p = self.hole_density()
         n = self.electron_density()
         rho=self.sys.rho
         l1, = ax.plot(X,np.log10(n), lw=2, color='#2e89cf', ls='-')
         l2, = ax.plot(X,np.log10(p), lw=2, color='#cf392e', ls='-')
-        l3, = ax.plot(X,np.log10(np.abs(rho)), lw=2,color='k', ls='--')
+        l3, = ax.plot(X,np.log10(np.abs(rho)+pow(10,-30)), lw=2,color='k', ls='--')
 
         fig.legend([l1, l2], [r'$\mathregular{n}$', r'$\mathregular{p}$'])
 
-        ax.set_xlabel(r'Position [$\mathregular{\mu m}$]')
+        ax.set_xlabel(r'Position [$\mathregular{nm}$]')
 
         if show:
             plt.show()
