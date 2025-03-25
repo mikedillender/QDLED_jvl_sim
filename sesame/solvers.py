@@ -7,6 +7,7 @@ import numpy as np
 from scipy.io import savemat
 from . import analyzer
 from .utils import save_sim
+import matplotlib.pyplot as plt
 
 from .analyzer import Analyzer
 
@@ -168,7 +169,7 @@ class Solver():
 
             if self.equilibrium is None:
                 return None
-
+        #print(guess['v'])
         # Return now if the electrostatic potential is all we wanted
         if compute == 'Poisson':
             efn = np.zeros_like(self.equilibrium)
@@ -185,7 +186,15 @@ class Solver():
                 x[0::3] = guess['efn']
                 x[1::3] = guess['efp']
                 x[2::3] = guess['v']
-
+            fig = plt.figure()
+            X0 = system.xpts
+            ax = fig.add_subplot(111)
+            vx, vefn, vefp = x[2::3], x[0::3], x[1::3]
+            l1, = ax.plot(X0 * 1e7, vx, lw=2, color='k', ls='-')
+            l2, = ax.plot(X0 * 1e7, vefn, lw=2, color='#2e89cf', ls='-')
+            l3, = ax.plot(X0 * 1e7, vefp, lw=2, color='#cf392e', ls='-')
+            plt.title("initial equilibrium condition")
+            plt.show()
             # Compute solution (Newton returns an array)
             x = self._newton(system, x, tol=tol, periodic_bcs=periodic_bcs,\
                              maxiter=maxiter, verbose=verbose, htp=htp)
@@ -218,7 +227,7 @@ class Solver():
 
     def _get_system(self, x, system, periodic_bcs):
         # Compute the right hand side of J * x = f
-        if self.equilibrium is None:
+        if self.equilibrium is None: # this is where the guess comes from i think
             size = system.nx * system.ny
             f, rows, columns, data = getFandJ_eq(system, x)
         else:
@@ -261,11 +270,15 @@ class Solver():
 
                 # solve linear system
                 f, J = self._get_system(x, system, periodic_bcs)
+                #kam = np.argmax(abs(f))
+                #print('max f is ', max(abs(f)), " at ", kam, " (", f[kam], ")")
+
                 if gamma != 1:
                     f -= (1-gamma)*f0
 
                 try:
                     dx = self._sparse_solver(J, -f)
+
                     if dx is None:
                         raise SparseSolverError
                         break
@@ -273,7 +286,20 @@ class Solver():
                         dx.transpose()
                         # compute error
                         error = max(np.abs(dx))
+
                         if np.isnan(error) or error > 1e30:
+                            kam=np.argmax(abs(dx))
+                            print('max value ',error," at ",kam," (",dx[kam],")")
+                            fig = plt.figure()
+                            X0 = system.xpts
+                            ax = fig.add_subplot(111)
+                            vx, vefn, vefp = dx[2::3], dx[0::3], dx[1::3]
+                            l1, = ax.plot(X0 * 1e7, vx, lw=2, color='k', ls='-')
+                            l2, = ax.plot(X0 * 1e7, vefn, lw=2, color='#cf392e', ls='-')
+                            l3, = ax.plot(X0 * 1e7, vefp, lw=2, color='#2e89cf', ls='-')
+                            plt.title("error")
+                            fig.legend([l1, l2, l3], [r'$\mathregular{v}$', r'$\mathregular{E_{fn}}$',r'$\mathregular{E_{fp}}$'])
+                            plt.show()
                             raise NewtonError
                             break
                         if error < htol:
@@ -293,6 +319,15 @@ class Solver():
                 except NewtonError:
                     msg = "**  The Newton-Raphson algorithm diverged, try a better guess or finer grid  **"
                     logging.error(msg)
+                    fig = plt.figure()
+                    X0=system.xpts
+                    ax = fig.add_subplot(111)
+                    vx,vefn,vefp=x[2::3], x[0::3], x[1::3]
+                    l1, = ax.plot(X0 * 1e7, vx, lw=2, color='k', ls='-')
+                    l2, = ax.plot(X0 * 1e7, vefn, lw=2, color='#2e89cf', ls='-')
+                    l3, = ax.plot(X0 * 1e7, vefp, lw=2, color='#cf392e', ls='-')
+                    plt.show()
+
                     break
                         
         if converged:

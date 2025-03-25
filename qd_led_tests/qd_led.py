@@ -19,14 +19,14 @@ print("t_total = ",t_total,"|  rqd = ",r_qd, "| taqd = ",t_aqd, "| tbqd = ", t_b
 dd = 1.5e-7   # 2*dd is the distance over which mesh is refined
 # Define the mesh
 x = np.concatenate((np.linspace(0, dd, 20, endpoint=False),                        # L contact interface
-                    np.linspace(dd, t_hil-dd, 40, endpoint=False),                    # material 1
-                    np.linspace(t_hil - dd, t_hil + dd, 20, endpoint=False),             # interface 1
-                    np.linspace(t_hil + dd, (t_bqd) - dd, 40, endpoint=False),       # material 2
-                    np.linspace((t_bqd) - dd, (t_bqd), 40, endpoint=False),      # htl-qd interface
+                    np.linspace(dd, t_hil-dd, 100, endpoint=False),                    # material 1
+                    np.linspace(t_hil - dd, t_hil + dd, 90, endpoint=False),             # interface 1
+                    np.linspace(t_hil + dd, (t_bqd) - dd, 100, endpoint=False),       # material 2
+                    np.linspace((t_bqd) - dd, (t_bqd), 200, endpoint=False),      # htl-qd interface
                     [(t_bqd)+r_qd, (t_aqd)-r_qd],      # QD
-                    np.linspace((t_aqd), (t_aqd) + dd, 40, endpoint=False),      # qd-etl interface
-                    np.linspace((t_aqd) + dd, (t_total) - dd, 80, endpoint=False),       # material 2
-                    np.linspace((t_total) - dd, (t_total), 100)))                       # R contact interface
+                    np.linspace((t_aqd), (t_aqd) + dd, 200, endpoint=False),      # qd-etl interface
+                    np.linspace((t_aqd) + dd, (t_total) - dd, 100, endpoint=False),       # material 2
+                    np.linspace((t_total) - dd, (t_total), 230)))                       # R contact interface
 
 # Build system
 sys = sesame.Builder(x)
@@ -59,13 +59,14 @@ sys.add_material(hil, hil_region)     # adding CdTe
 sys.add_material(qdc, qd_region)     # adding CdTe
 sys.add_qd(qd_region)
 # Add the donors
-sys.add_donor(2.81e19, etl_region)
+sys.add_donor(2.81e17, etl_region)
 # Add the acceptors
 sys.add_acceptor(1e17, htl_region)
 sys.add_acceptor(1e17, hil_region)
 
 # Define contacts: CdS contact is Ohmic, CdTe contact is Schottky
 Lcontact_type, Rcontact_type = 'Schottky', 'Schottky'
+#Lcontact_type, Rcontact_type = 'Ohmic', 'Ohmic'
 Lcontact_workFcn, Rcontact_workFcn = 4.7, 4.06   # Lcontact work function irrelevant because L contact is Ohmic
 # Add the contacts
 sys.contact_type(Lcontact_type, Rcontact_type, Lcontact_workFcn, Rcontact_workFcn)
