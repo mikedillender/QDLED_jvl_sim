@@ -39,7 +39,7 @@ htl = {'Nc': 2.5e18, 'Nv':2.5e19, 'Eg':3, 'epsilon':3.5, 'Et': 0,
         'mu_e':0.002, 'mu_h':0.002, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
         'affinity': 2.6}
 qdc = {'Nc': 2.5e19*pow(.13,1.5), 'Nv':2.5e19*pow(.45,1.5), 'Eg':2.28, 'epsilon':9.4, 'Et': 0,
-        'mu_e':0.000002, 'mu_h':0.000001, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
+        'mu_e':0.000002*.0001, 'mu_h':0.000001*.0001, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
         'affinity': 3.6}
 # CdTe material dictionary
 etl = {'Nc': 2.5e19*pow(.24,1.5), 'Nv': 2.5e19*pow(.59,1.5), 'Eg':3.4, 'epsilon':8.5, 'Et': 0,
@@ -59,7 +59,7 @@ sys.add_material(hil, hil_region)     # adding CdTe
 sys.add_material(qdc, qd_region)     # adding CdTe
 sys.add_qd(qd_region)
 # Add the donors
-sys.add_donor(2.81e17, etl_region)
+sys.add_donor(1e17, etl_region)
 # Add the acceptors
 sys.add_acceptor(1e17, htl_region)
 sys.add_acceptor(1e17, hil_region)
@@ -80,13 +80,13 @@ sys.contact_S(Sn_left, Sp_left, Sn_right, Sp_right)
 
 
 # Specify the applied voltage values
-voltages = np.linspace(0,2,10)
+voltages = np.linspace(0,2,20)
 # Perform I-V calculation
-j = sesame.IVcurve(sys, voltages, 't_out3/1dQD_V')
+j = sesame.IVcurve(sys, voltages, 't_out4/1dQD_V',htp=1,maxiter=2000)
 j = j * sys.scaling.current
 
 result = {'v':voltages, 'j':j}
-np.save('t_out3/qd_IV_values', result)
+np.save('t_out4/qd_IV_values', result)
 
 # plot I-V curve
 try:

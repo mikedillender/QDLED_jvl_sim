@@ -263,10 +263,16 @@ class Solver():
             while not converged:
                 cc = cc + 1
                 # break if no solution found after maxiterations
-                if cc > maxiter:
-                    msg = "**  Maximum number of iterations reached  **"
-                    logging.error(msg)
-                    break
+                if cc == 100:
+                    print("try decreasing voltage :D")
+                    if(x[system.qd_sites[0]*3+2]>x[(system.qd_sites[0]-1)*3+2]):
+                        x[system.qd_sites[0]*3+2]-=1
+                if cc == 101:
+                    if(x[system.qd_sites[1]*3+2]>x[(system.qd_sites[0])*3+2]):
+                        x[system.qd_sites[1]*3+2]-=2
+                if cc == 102:
+                    if(x[(system.qd_sites[1]+1)*3+2]>x[(system.qd_sites[1])*3+2]):
+                        x[(system.qd_sites[1]+1)*3+2]-=3
 
                 # solve linear system
                 f, J = self._get_system(x, system, periodic_bcs)
@@ -287,6 +293,23 @@ class Solver():
                         # compute error
                         error = max(np.abs(dx))
 
+                        if cc > maxiter:
+                            msg = "**  Maximum number of iterations reached  **"
+                            logging.error(msg)
+                            kam = np.argmax(abs(dx))
+                            print('max value ', error, " at ", kam, " (", dx[kam], ")")
+                            fig = plt.figure()
+                            X0 = system.xpts
+                            ax = fig.add_subplot(111)
+                            vx, vefn, vefp = x[2::3], x[0::3], x[1::3]
+                            l1, = ax.plot(X0 * 1e7, vx, lw=2, color='k', ls='-')
+                            l2, = ax.plot(X0 * 1e7, vefn, lw=2, color='#cf392e', ls='-')
+                            l3, = ax.plot(X0 * 1e7, vefp, lw=2, color='#2e89cf', ls='-')
+                            plt.title("error")
+                            fig.legend([l1, l2, l3],
+                                       [r'$\mathregular{v}$', r'$\mathregular{E_{fn}}$', r'$\mathregular{E_{fp}}$'])
+                            plt.show()
+                            break
                         if np.isnan(error) or error > 1e30:
                             kam=np.argmax(abs(dx))
                             print('max value ',error," at ",kam," (",dx[kam],")")
@@ -419,6 +442,8 @@ class Solver():
         # Array of the steady state current
         J = np.zeros((len(Vapp),))
         J[:] = np.nan
+        #v0=Vapp[0]
+        #self.equilibrium=np.linspace(-system.contacts_WF[0] / system.scaling.energy, -system.contacts_WF[1] / system.scaling.energy+v0*q, system.nx)
 
         for idx, vapp in enumerate(Vapp):
 
