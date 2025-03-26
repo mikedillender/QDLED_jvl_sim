@@ -186,15 +186,18 @@ class Solver():
                 x[0::3] = guess['efn']
                 x[1::3] = guess['efp']
                 x[2::3] = guess['v']
-            fig = plt.figure()
+            '''fig = plt.figure()
             X0 = system.xpts
             ax = fig.add_subplot(111)
             vx, vefn, vefp = x[2::3], x[0::3], x[1::3]
-            l1, = ax.plot(X0 * 1e7, vx, lw=2, color='k', ls='-')
-            l2, = ax.plot(X0 * 1e7, vefn, lw=2, color='#2e89cf', ls='-')
-            l3, = ax.plot(X0 * 1e7, vefp, lw=2, color='#cf392e', ls='-')
+            vt = system.scaling.energy
+            l1, = ax.plot(X0, vt*vefn, lw=2, color='#2e89cf', ls='--')
+            l2, = ax.plot(X0, vt*vefp, lw=2, color='#cf392e', ls='--')
+            l3, = ax.plot(X0, -vt * (vx + system.bl), lw=2, color='k', ls='-')
+            l4, = ax.plot(X0, -vt * (vx + system.bl + system.Eg), lw=2, color='k', ls='-')
+            l4, = ax.plot(X0, vt * (vx-vx[0]), lw=2, color='g', ls='--')
             plt.title("initial equilibrium condition")
-            plt.show()
+            plt.show()'''
             # Compute solution (Newton returns an array)
             x = self._newton(system, x, tol=tol, periodic_bcs=periodic_bcs,\
                              maxiter=maxiter, verbose=verbose, htp=htp)

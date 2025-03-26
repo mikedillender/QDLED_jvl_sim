@@ -2,7 +2,7 @@ import sesame
 import numpy as np
 import matplotlib.pyplot as plt
 
-sys, result = sesame.load_sim('t_out4/1dQD_V_15.gzip')
+sys, result = sesame.load_sim('t_out4/1dQD_V_40.gzip')
 az = sesame.Analyzer(sys,result)
 p1 = (0,0)
 p2 = (90e-7,0)

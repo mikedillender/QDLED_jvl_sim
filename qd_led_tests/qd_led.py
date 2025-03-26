@@ -16,17 +16,17 @@ t_total=t_aqd+t_etl
 print("t_total = ",t_total,"|  rqd = ",r_qd, "| taqd = ",t_aqd, "| tbqd = ", t_bqd)
 
 # Heterojunctions require dense mesh near the interface
-dd = 1.5e-7   # 2*dd is the distance over which mesh is refined
+dd = 4e-7   # 2*dd is the distance over which mesh is refined
 # Define the mesh
-x = np.concatenate((np.linspace(0, dd, 20, endpoint=False),                        # L contact interface
-                    np.linspace(dd, t_hil-dd, 100, endpoint=False),                    # material 1
-                    np.linspace(t_hil - dd, t_hil + dd, 90, endpoint=False),             # interface 1
-                    np.linspace(t_hil + dd, (t_bqd) - dd, 100, endpoint=False),       # material 2
+x = np.concatenate((np.linspace(0, dd, 300, endpoint=False),                        # L contact interface
+                    np.linspace(dd, t_hil-dd, 200, endpoint=False),                    # material 1
+                    np.linspace(t_hil - dd, t_hil + dd, 200, endpoint=False),             # interface 1
+                    np.linspace(t_hil + dd, (t_bqd) - dd, 200, endpoint=False),       # material 2
                     np.linspace((t_bqd) - dd, (t_bqd), 200, endpoint=False),      # htl-qd interface
                     [(t_bqd)+r_qd, (t_aqd)-r_qd],      # QD
                     np.linspace((t_aqd), (t_aqd) + dd, 200, endpoint=False),      # qd-etl interface
-                    np.linspace((t_aqd) + dd, (t_total) - dd, 100, endpoint=False),       # material 2
-                    np.linspace((t_total) - dd, (t_total), 230)))                       # R contact interface
+                    np.linspace((t_aqd) + dd, (t_total) - dd, 200, endpoint=False),       # material 2
+                    np.linspace((t_total) - dd, (t_total), 300)))                       # R contact interface
 
 # Build system
 sys = sesame.Builder(x)
@@ -62,7 +62,7 @@ sys.add_qd(qd_region)
 sys.add_donor(1e17, etl_region)
 # Add the acceptors
 sys.add_acceptor(1e17, htl_region)
-sys.add_acceptor(1e17, hil_region)
+sys.add_acceptor(2.81e19, hil_region)
 
 # Define contacts: CdS contact is Ohmic, CdTe contact is Schottky
 Lcontact_type, Rcontact_type = 'Schottky', 'Schottky'
@@ -72,7 +72,7 @@ Lcontact_workFcn, Rcontact_workFcn = 4.7, 4.06   # Lcontact work function irrele
 sys.contact_type(Lcontact_type, Rcontact_type, Lcontact_workFcn, Rcontact_workFcn)
 
 # Define the surface recombination velocities for electrons and holes [m/s]
-Scontact = 1.16e5  # [cm/s]
+Scontact = 1.16e7  # [cm/s]
 # non-selective contacts
 Sn_left, Sp_left, Sn_right, Sp_right = Scontact, Scontact, Scontact, Scontact
 # This function specifies the simulation contact recombination velocity
@@ -80,7 +80,7 @@ sys.contact_S(Sn_left, Sp_left, Sn_right, Sp_right)
 
 
 # Specify the applied voltage values
-voltages = np.linspace(0,2,20)
+voltages = np.linspace(0,5,200)
 # Perform I-V calculation
 j = sesame.IVcurve(sys, voltages, 't_out4/1dQD_V',htp=1,maxiter=2000)
 j = j * sys.scaling.current
