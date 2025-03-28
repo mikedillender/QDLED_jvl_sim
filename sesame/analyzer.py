@@ -156,13 +156,21 @@ class Analyzer():
             show = True
 
         # add axis to figure
-        ax = fig.add_subplot(121)
+        ax = fig.add_subplot(131)
         l1, = ax.plot(X0*1e7,V, lw=2, color='#2e89cf', ls='-')
         ax.set_title(r'$\mathregular{V(x)}$')
         ax.set_xlabel(r'Position [$\mathregular{nm}$]')
-        ax = fig.add_subplot(122)
+        ax = fig.add_subplot(132)
         l2, = ax.plot(X1*1e7,E, lw=2, color='#2e89cf', ls='-')
         ax.set_title(r'$\mathregular{E(x)}$')
+        ax.set_xlabel(r'Position [$\mathregular{nm}$]')
+        ax = fig.add_subplot(133)
+        p = self.hole_density()
+        n = self.electron_density()
+        rho = self.sys.rho - n + p
+        l2, = ax.plot(X0*1e7,rho, lw=2, color='#cf392e', ls='-')
+        ax.set_ylim(-.1,.1)
+        ax.set_title(r'$\mathregular{\rho(x)}$')
         ax.set_xlabel(r'Position [$\mathregular{nm}$]')
 
 

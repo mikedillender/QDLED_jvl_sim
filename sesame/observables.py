@@ -147,10 +147,10 @@ def get_jn(sys, efn, v, sites_i, sites_ip1, dl):
 
         dphi=(v[sys.qd_sites[1]+1]-v[sys.qd_sites[1]])* sys.scaling.energy
         alpha_phi=3e-9
-        lambdae=(((cts.e*sys.scaling.density)*(np.pi*sys.scaling.density*sys.rqd**3)))
+        lambdae=(((cts.e*sys.scaling.density)*(np.pi*sys.scaling.density*sys.rqd**3)))*alpha_phi
         E_etl=-dphi /sys.rqd
         F0=5e6
-        mu_E=(E_etl>0)*alpha_phi*np.sqrt(np.pow(np.abs(E_etl),3)/F0)*lambdae/sys.scaling.current
+        mu_E=(E_etl>0)*np.sqrt(np.pow(np.abs(E_etl),3)/F0)*lambdae/sys.scaling.current
         jni_qd=mu_E*(sys.qd_density-n_qd2)*n_etl
 
 
@@ -163,7 +163,7 @@ def get_jn(sys, efn, v, sites_i, sites_ip1, dl):
          -1 * mu * exp(efnp1)*(-(efnp0 - efnp1))     / dl / (-exp(-vp0) * (1 + .5 * dv0 + 1 / 6. * (dv0) ** 2)) * (np.abs(dv0) < tol2)) * (np.abs(defn) < tol3)
 
     if (len(sites_i) > 1):
-        jn[qd_links]/=100000.
+        jn[qd_links]/=1e9
         jn[qd1_i]+= jnt_qd
         #print("jn at etl interface was ",jn[qd2_i],', adding ', jni_qd,' (vt = ',jnt_qd,")")
         #print(" - n_qd1 ",n_qd1,", n_qd2 ", n_qd2,", n_etl ",n_etl)
@@ -232,10 +232,10 @@ def get_jp(sys, efp, v, sites_i, sites_ip1, dl):
 
         dphi=(v[sys.qd_sites[0]]-v[sys.qd_sites[0]-1])
         alpha_phi=3e-9
-        lambdah=(((cts.e*sys.scaling.density)*(np.pi*sys.scaling.density*sys.rqd**3)))
+        lambdah=(((cts.e*sys.scaling.density)*(np.pi*sys.scaling.density*sys.rqd**3)))*alpha_phi
         E_htl=-dphi * sys.scaling.energy/sys.rqd
         F0=5e6
-        mu_E=(E_htl>0)*np.sign(E_htl)*alpha_phi*np.sqrt(np.pow(np.abs(E_htl),3)/F0)*lambdah/sys.scaling.current
+        mu_E=(E_htl>0)*np.sqrt(np.pow(np.abs(E_htl),3)/F0)*lambdah/sys.scaling.current
         #if(E_htl>0):
         #    print("HTL POSITIVE FIELD!",E_htl)
         #("htl ",E_htl)
@@ -250,7 +250,7 @@ def get_jp(sys, efp, v, sites_i, sites_ip1, dl):
           mu * exp(efpp1) * ( -(efpp0 - efpp1))    / dl * 1 / (-exp(vp0) * (1 - .5 * (dv0) + 1 / 6. * (dv0) ** 2.)) * (np.abs(dv0) < tol2)) * (np.abs(defp) < tol3)
 
     if (len(sites_i) > 1):
-        jp[qd_links]/=100000
+        jp[qd_links]/=1e9
         jp[qd1_i]+=jpt_qd
         #print("jp at htl interface was ",jp[qd1_i-1],', adding ', jpi_qd,' (vt = ',jpt_qd,")")
         #print(" - p_htl ",p_htl,", n_qd1 ",p_qd1,", n_qd2 ", p_qd2)
@@ -292,10 +292,10 @@ def get_jn_derivs(sys, efn, v, sites_i, sites_ip1, dl):
         n_etl=exp(efnp0[qd2_i+1]+vp0[qd2_i+1])
         dphi=(v[sys.qd_sites[1]+1]-v[sys.qd_sites[1]])
         alpha_phi=3e-9
-        lambdae=(((cts.e*sys.scaling.density)*(np.pi*sys.scaling.density*(sys.rqd**3))))
+        lambdae=(((cts.e*sys.scaling.density)*(np.pi*sys.scaling.density*(sys.rqd**3))))*alpha_phi
         E_etl=-dphi* sys.scaling.energy / sys.rqd
         F0=5e6
-        mu_E=(E_etl>0)*np.sign(E_etl)*alpha_phi*np.sqrt(np.pow(np.abs(E_etl),3)/F0)*lambdae/sys.scaling.current
+        mu_E=(E_etl>0)*np.sqrt(np.pow(np.abs(E_etl),3)/F0)*lambdae/sys.scaling.current
         #print("etl ", E_etl)
         #if(E_etl>0):
         #    print("ETL POSITIVE FIELD! ",E_etl,' v1 ',v[sys.qd_sites[1]+1]," v2 ",v[sys.qd_sites[1]])
@@ -330,10 +330,10 @@ def get_jn_derivs(sys, efn, v, sites_i, sites_ip1, dl):
     defn_i, defn_ip1, dv_i, dv_ip1=mu * defn_i, mu * defn_ip1, mu * dv_i, mu * dv_ip1
 
     if (len(sites_i) > 1):
-        dv_i[qd_links]/=100000
-        dv_ip1[qd_links]/=100000
-        defn_i[qd_links]/=100000
-        defn_ip1[qd_links]/=100000
+        dv_i[qd_links]/=1e9
+        dv_ip1[qd_links]/=1e9
+        defn_i[qd_links]/=1e9
+        defn_ip1[qd_links]/=1e9
         #print('dv was ',dv_i[qd1_i],", now ",-vd*n_qd1)
         # dot to dot
         dv_i[qd1_i] += - vd*n_qd1
@@ -388,10 +388,10 @@ def get_jp_derivs(sys, efp, v, sites_i, sites_ip1, dl):
 
         dphi=(v[sys.qd_sites[0]]-v[sys.qd_sites[0]-1])
         alpha_phi=3e-9
-        lambdah=(((cts.e*sys.scaling.density)*(np.pi*sys.scaling.density*sys.rqd**3)))
+        lambdah=(((cts.e*sys.scaling.density)*(np.pi*sys.scaling.density*sys.rqd**3)))*alpha_phi
         E_htl=-dphi*sys.scaling.energy/sys.rqd
         F0=5e6
-        mu_E=(E_htl>0)*np.sign(E_htl)*alpha_phi*np.sqrt(np.pow(np.abs(E_htl),3)/F0)*lambdah/sys.scaling.current
+        mu_E=(E_htl>0)*np.sqrt(np.pow(np.abs(E_htl),3)/F0)*lambdah/sys.scaling.current
         jpi_qd=mu_E*(sys.qd_density-p_qd1)*p_htl
 
 
@@ -422,10 +422,10 @@ def get_jp_derivs(sys, efp, v, sites_i, sites_ip1, dl):
     defp_i, defp_ip1, dv_i, dv_ip1=mu * defp_i, mu * defp_ip1, mu * dv_i, mu * dv_ip1
     ''''''
     if (len(sites_i) > 1):
-        dv_i[qd_links]/=100000
-        dv_ip1[qd_links]/=100000
-        defp_i[qd_links]/=100000
-        defp_ip1[qd_links]/=100000
+        dv_i[qd_links]/=1e9
+        dv_ip1[qd_links]/=1e9
+        defp_i[qd_links]/=1e9
+        defp_ip1[qd_links]/=1e9
 
         dv_i[qd1_i] += + vd*p_qd1
         dv_ip1[qd1_i] +=  -vd*p_qd2
