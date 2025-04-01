@@ -248,12 +248,13 @@ class Analyzer():
 
         X = X * 1e7  # in nm
 
-        p = self.hole_density()
-        n = self.electron_density()
-        rho=self.sys.rho
+        p = self.sys.scaling.density*self.hole_density()
+        n = self.sys.scaling.density*self.electron_density()
+        rho=self.sys.scaling.density*self.sys.rho
         l1, = ax.plot(X,np.log10(n), lw=2, color='#2e89cf', ls='-')
         l2, = ax.plot(X,np.log10(p), lw=2, color='#cf392e', ls='-')
         l3, = ax.plot(X,np.log10(np.abs(rho)+pow(10,-30)), lw=2,color='k', ls='--')
+        ax.set_ylim(ymin=10, ymax=20)
 
         fig.legend([l1, l2], [r'$\mathregular{n}$', r'$\mathregular{p}$'])
 

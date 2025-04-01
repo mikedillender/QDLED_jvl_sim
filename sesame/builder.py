@@ -59,7 +59,7 @@ class Builder():
         N, t, vt, mu = self.scaling.density, self.scaling.time, self.scaling.energy, self.scaling.mobility
 
         # sites belonging to the region
-        #s, pos = get_sites(self, location)
+        # s, pos = get_sites(self, location)
 
         N = self.scaling.density
         t = self.scaling.time
@@ -68,18 +68,18 @@ class Builder():
 
         # default material parameters
         if self.input_length == 'm':
-            mt = {'Nc': 1e25, 'Nv': 1e25, 'Eg': 1, 'epsilon': 1, 'mass_e': 1,\
-              'mass_h': 1, 'mu_e': 100e-4, 'mu_h': 100e-4, 'Et': 0, 'tau_e': 1e-6,\
-              'tau_h': 1e-6, 'affinity': 0, 'B': 0, 'Cn': 0, 'Cp': 0}
+            mt = {'Nc': 1e25, 'Nv': 1e25, 'Eg': 1, 'epsilon': 1, 'mass_e': 1, \
+                  'mass_h': 1, 'mu_e': 100e-4, 'mu_h': 100e-4, 'Et': 0, 'tau_e': 1e-6, \
+                  'tau_h': 1e-6, 'affinity': 0, 'B': 0, 'Cn': 0, 'Cp': 0}
         else:
             mt = {'Nc': 1e19, 'Nv': 1e19, 'Eg': 1, 'epsilon': 1, 'mass_e': 1, \
                   'mass_h': 1, 'mu_e': 100, 'mu_h': 100, 'Et': 0, 'tau_e': 1e-6, \
                   'tau_h': 1e-6, 'affinity': 0, 'B': 0, 'Cn': 0, 'Cp': 0}
 
-        arrays = {'Nc': self.Nc, 'Nv': self.Nv, 'Eg': self.Eg,\
-                  'epsilon': self.epsilon, 'mass_e': self.mass_e,\
-                  'mass_h': self.mass_h, 'mu_e': self.mu_e, 'mu_h': self.mu_h,\
-                  'Et': self.Etrap, 'tau_e': self.tau_e, 'tau_h': self.tau_h,\
+        arrays = {'Nc': self.Nc, 'Nv': self.Nv, 'Eg': self.Eg, \
+                  'epsilon': self.epsilon, 'mass_e': self.mass_e, \
+                  'mass_h': self.mass_h, 'mu_e': self.mu_e, 'mu_h': self.mu_h, \
+                  'Et': self.Etrap, 'tau_e': self.tau_e, 'tau_h': self.tau_h, \
                   'affinity': self.bl, 'B': self.B, 'Cn': self.Cn, 'Cp': self.Cp}
 
         for key, val in mt.items():
@@ -124,16 +124,28 @@ class Builder():
     def add_acceptor(self, density, location=lambda pos: True):
         self.rho[np.where(location(self.xpts))[0]] -= density / self.scaling.density
 
-    def add_qd(self, location=lambda pos: True):
-        self.qd_sites=(np.where(location(self.xpts))[0])
-        self.rqd=(self.xpts[self.qd_sites[1]]-self.xpts[self.qd_sites[0]])/2
-        self.qd_links=self.qd_sites.copy()
-        self.qd_links=np.insert(self.qd_links,0,self.qd_links[0]-1)
-        self.qd_density=3/((self.rqd**3)*self.scaling.density*4*np.pi)
-        print("r_qd = ",self.rqd,', sites ',self.qd_sites, ", links ",self.qd_links,", density ",self.qd_density)
+    def add_qd(self, t_s_nm, qd_mns=.19, qd_mps=.6, dEc=.28, dEv=.28, location=lambda pos: True, temp=300):
+        self.qd_sites = (np.where(location(self.xpts))[0])
+        self.rqd = (self.xpts[self.qd_sites[1]] - self.xpts[self.qd_sites[0]]) / 2
+        self.qd_links = self.qd_sites.copy()
+        self.qd_links = np.insert(self.qd_links, 0, self.qd_links[0] - 1)
+        self.qd_density = 3 / ((self.rqd ** 3) * self.scaling.density * 4 * np.pi)
+        print("r_qd = ", self.rqd, ', sites ', self.qd_sites, ", links ", self.qd_links, ", density ", self.qd_density)
+        qd_mn, qd_mp = qd_mns, qd_mps
+        T_bn = np.exp(-10.246 * t_s_nm * np.sqrt(qd_mn * dEc))
+        T_bp = np.exp(-10.246 * t_s_nm * np.sqrt(qd_mp * dEv))
+        vth_n = 5.505695e5 * np.sqrt(temp / qd_mn)
+        vth_p = 5.505695e5 * np.sqrt(temp / qd_mp)
+        print("vth_n = ", f"{vth_n:.2e}", ', vth_p = ', f"{vth_p:.2e}")
+        self.qd_vd_n = vth_n * T_bn / (4 * self.rqd)
+        self.qd_vd_p = vth_p * T_bp / (4 * self.rqd)
+        print("T_bn = ", f"{T_bn:.2e}", ', T_bp = ',f"{T_bp:.2e}", ", vd_n = ", f"{self.qd_vd_n:.2e}", ", vd_p = ", f"{self.qd_vd_p:.2e}")
+        self.qd_alpha_n = 0.5 * T_bn * (0.000001)
+        self.qd_alpha_p = 0.5 * T_bp * (0.000001)
+        print("alpha_n = ", self.qd_alpha_n, ', alpha_p = ', self.qd_alpha_p)
 
-        #print(self.xpts[self.qd_sites[0]-1:self.qd_sites[1]+4])
-        #print(self.xpts[self.qd_sites])
+        # print(self.xpts[self.qd_sites[0]-1:self.qd_sites[1]+4])
+        # print(self.xpts[self.qd_sites])
 
     def contact_S(self, Scn_left, Scp_left, Scn_right, Scp_right):
         v = self.scaling.velocity
