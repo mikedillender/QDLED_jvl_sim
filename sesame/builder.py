@@ -25,7 +25,7 @@ class Builder():
     def __init__(self, xpts, input_length='cm', T=300):
         self.scaling = Scaling(input_length, T)
         self.input_length = input_length
-
+        self.has_qd=False
         self.xpts = xpts
         self.dx = (self.xpts[1:] - self.xpts[:-1]) / self.scaling.length
         self.nx = xpts.shape[0]
@@ -126,6 +126,7 @@ class Builder():
 
     def add_qd(self, t_s_nm, qd_mns=.19, qd_mps=.6, dEc=.28, dEv=.28, location=lambda pos: True, temp=300):
         self.qd_sites = (np.where(location(self.xpts))[0])
+        self.eml_sites=[self.qd_sites[0]-1,self.qd_sites[0],self.qd_sites[1],self.qd_sites[1]+1]
         self.rqd = (self.xpts[self.qd_sites[1]] - self.xpts[self.qd_sites[0]]) / 2
         self.qd_links = self.qd_sites.copy()
         self.qd_links = np.insert(self.qd_links, 0, self.qd_links[0] - 1)
@@ -143,6 +144,7 @@ class Builder():
         self.qd_alpha_n = 0.5 * T_bn * (0.000001)
         self.qd_alpha_p = 0.5 * T_bp * (0.000001)
         print("alpha_n = ", self.qd_alpha_n, ', alpha_p = ', self.qd_alpha_p)
+        self.has_qd=True
 
         # print(self.xpts[self.qd_sites[0]-1:self.qd_sites[1]+4])
         # print(self.xpts[self.qd_sites])

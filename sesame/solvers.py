@@ -332,6 +332,8 @@ class Solver():
                             converged = True
                         else: 
                             # damping and new value of x
+                            #print(dx[system.eml_sites])
+                            #dx[system.qd_sites[1]]
                             self._damping(dx)
                             x += dx
                         # print status of solution procedure

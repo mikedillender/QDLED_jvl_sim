@@ -20,7 +20,7 @@ dd = 4e-7   # 2*dd is the distance over which mesh is refined
 dd2 = 1.5e-7
 # Define the mesh
 x = np.concatenate((np.linspace(0, dd, 300, endpoint=False),                        # L contact interface
-                    np.linspace(dd, t_hil-dd2, 350, endpoint=False),                    # material 1
+                    np.linspace(dd, t_hil-dd2, 100, endpoint=False),                    # material 1
                     np.linspace(t_hil - dd2, t_hil + dd2, 300, endpoint=False),             # interface 1
                     np.linspace(t_hil + dd2, (t_bqd) - dd, 200, endpoint=False),       # material 2
                     np.linspace((t_bqd) - dd, (t_bqd), 200, endpoint=False),      # htl-qd interface
@@ -30,12 +30,15 @@ x = np.concatenate((np.linspace(0, dd, 300, endpoint=False),                    
                     np.linspace((t_total) - dd, (t_total), 300)))                       # R contact interface
 # Build system
 sys = sesame.Builder(x)
-qd_mnc, qd_mpc=.13,.45
-#qd_mnc, qd_mpc=.4,.4
-qd_mns, qd_mps=.19,.6
-#qd_mns, qd_mps=.4,.4
+#qd_mnc, qd_mpc=.13,.45
+qd_mnc, qd_mpc=.4,.4
+#qd_mns, qd_mps=.19,.6
+qd_mns, qd_mps=.4,.4
 # CdS material dictionary
-hil = {'Nc': 2.5e19, 'Nv':2.5e19, 'Eg':1.57, 'epsilon':3, 'Et': 0,
+#hil = {'Nc': 2.5e19, 'Nv':2.5e19, 'Eg':1.57, 'epsilon':3, 'Et': 0,
+#        'mu_e':0.000322, 'mu_h':0.000322, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
+#        'affinity': 3.6}
+hil = {'Nc': 2.5e19, 'Nv':2.5e19, 'Eg':1.9, 'epsilon':3, 'Et': 0,
         'mu_e':0.000322, 'mu_h':0.000322, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
         'affinity': 3.6}
 htl = {'Nc': 2.5e19, 'Nv':2.5e19, 'Eg':3, 'epsilon':5, 'Et': 0,
@@ -45,12 +48,13 @@ qdc = {'Nc': 2.5e19*pow(qd_mnc,1.5), 'Nv':2.5e19*pow(qd_mpc,1.5), 'Eg':2.28, 'ep
         'mu_e':0.000001, 'mu_h':0.000001, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
         'affinity': 3.6,'Cn':pow(10,-32),'Cp':pow(10,-32),'B':pow(10,-14)}
 # CdTe material dictionary'''''' ''''''
-etl = {'Nc': 2.5e19*pow(.24,1.5), 'Nv': 2.5e19*pow(.59,1.5), 'Eg':3.4, 'epsilon':5, 'Et': 0,
+'''etl = {'Nc': 2.5e19*pow(.24,1.5), 'Nv': 2.5e19*pow(.59,1.5), 'Eg':3.4, 'epsilon':5, 'Et': 0,
         'mu_e':0.002, 'mu_h':0.002, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
         'affinity': 4}
-'''etl = {'Nc': 2.5e19, 'Nv': 2.5e19, 'Eg':3.4, 'epsilon':5, 'Et': 0,
+'''
+etl = {'Nc': 2.5e19, 'Nv': 2.5e19, 'Eg':3.4, 'epsilon':5, 'Et': 0,
         'mu_e':0.002, 'mu_h':0.002, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
-        'affinity': 4}'''
+        'affinity': 4}
 
 # CdS region
 hil_region = lambda x: x<=t_hil
@@ -68,17 +72,17 @@ sys.add_qd(1.0,qd_mns=qd_mns,qd_mps=qd_mps,location=qd_region)
 sys.add_donor(1e17, etl_region)
 # Add the acceptors
 sys.add_acceptor(1e17, htl_region)
-sys.add_acceptor(2.81e19, hil_region)
+sys.add_acceptor(5e18, hil_region)
 
 # Define contacts: CdS contact is Ohmic, CdTe contact is Schottky
 Lcontact_type, Rcontact_type = 'Schottky', 'Schottky'
 #Lcontact_type, Rcontact_type = 'Ohmic', 'Ohmic'
-Lcontact_workFcn, Rcontact_workFcn = 4.7, 4.0   # Lcontact work function irrelevant because L contact is Ohmic
+Lcontact_workFcn, Rcontact_workFcn = 5.3, 4.06   # Lcontact work function irrelevant because L contact is Ohmic
 # Add the contacts
 sys.contact_type(Lcontact_type, Rcontact_type, Lcontact_workFcn, Rcontact_workFcn)
 
 # Define the surface recombination velocities for electrons and holes [m/s]
-Scontact = 1.16e7  # [cm/s]
+Scontact = 1.16e4  # [cm/s]
 # non-selective contacts
 Sn_left, Sp_left, Sn_right, Sp_right = Scontact, Scontact, Scontact, Scontact
 # This function specifies the simulation contact recombination velocity

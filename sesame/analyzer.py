@@ -131,8 +131,8 @@ class Analyzer():
         l3, = ax.plot(X, -vt * (self.v[sites] + self.sys.bl[sites]), lw=2, color='k', ls='-')
         l4, = ax.plot(X, -vt * (self.v[sites] + self.sys.bl[sites] + self.sys.Eg[sites]), lw=2, color='k', ls='-')
 
-        fig.legend([l1, l2], [r'$\mathregular{E_{F_n}}$',\
-                              r'$\mathregular{E_{F_p}}$'])
+        #fig.legend([l1, l2], [r'$\mathregular{E_{F_n}}$',\
+        #                      r'$\mathregular{E_{F_p}}$'])
 
 
         ax.set_xlabel(r'Position [$\mathregular{nm}$]')
@@ -168,8 +168,8 @@ class Analyzer():
         p = self.hole_density()
         n = self.electron_density()
         rho = self.sys.rho - n + p
-        l2, = ax.plot(X0*1e7,rho, lw=2, color='#cf392e', ls='-')
-        ax.set_ylim(-.1,.1)
+        l3, = ax.plot(X0*1e7,rho, lw=2, color='#cf392e', ls='-')
+        ax.set_ylim(-2,2)
         ax.set_title(r'$\mathregular{\rho(x)}$')
         ax.set_xlabel(r'Position [$\mathregular{nm}$]')
 

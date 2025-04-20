@@ -115,7 +115,7 @@ def get_jn(sys, efn, v, sites_i, sites_ip1, dl):
     -------
     jn: numpy array of floats
     """
-
+    #print(sites_i[0])
     # tol1 controls the minimum value of dv.  all values less than tol1 are set equal to tol1
     tol1 = 1e-12
     # tol2 controls threshold for taylor series expansion of jp in terms of dv0: series expansion is used if dv0<tol2
@@ -134,7 +134,7 @@ def get_jn(sys, efn, v, sites_i, sites_ip1, dl):
     defn = efnp1 - efnp0
     mu = sys.mu_e[sites_i]
 
-    if (len(sites_i) > 1):
+    if (sys.has_qd and len(sites_i) > 1):
         qd1_i=sys.qd_sites[0] if sites_i[0] == 0 else sys.qd_sites[0]-1
         qd_links=sys.qd_links if sites_i[0] ==0 else sys.qd_links-1
         qd2_i=qd1_i+1
@@ -161,7 +161,7 @@ def get_jn(sys, efn, v, sites_i, sites_ip1, dl):
          (    mu * exp(efnp1)*(-(efnp0 - efnp1))     / dl * dv / (-exp(-vp0) * (1 - exp(dv))) * (np.abs(dv0) >= tol2) + \
          -1 * mu * exp(efnp1)*(-(efnp0 - efnp1))     / dl / (-exp(-vp0) * (1 + .5 * dv0 + 1 / 6. * (dv0) ** 2)) * (np.abs(dv0) < tol2)) * (np.abs(defn) < tol3)
 
-    if (len(sites_i) > 1):
+    if (sys.has_qd and len(sites_i) > 1):
         jn[qd_links]/=1e10
         jn[qd1_i]+= jnt_qd
         #print("jn at etl interface was ",jn[qd2_i],', adding ', jni_qd,' (vt = ',jnt_qd,")")
@@ -216,7 +216,7 @@ def get_jp(sys, efp, v, sites_i, sites_ip1, dl):
 
     mu = sys.mu_h[sites_i]
     #V=sys.V
-    if (len(sites_i) > 1):
+    if (sys.has_qd and len(sites_i) > 1):
         qd1_i=sys.qd_sites[0] if sites_i[0] == 0 else sys.qd_sites[0]-1
         qd1_j=sys.qd_sites[0] if sites_i[0] == 0 else sys.qd_sites[0]-1
         qd_links=sys.qd_links if sites_i[0] ==0 else sys.qd_links-1
@@ -247,7 +247,7 @@ def get_jp(sys, efp, v, sites_i, sites_ip1, dl):
          (mu * exp(efpp1) * ( -(efpp0 - efpp1))    / dl * dv / (-exp(vp0) * (1 - exp(-dv))) * (np.abs(dv0) >= tol2) + \
           mu * exp(efpp1) * ( -(efpp0 - efpp1))    / dl * 1 / (-exp(vp0) * (1 - .5 * (dv0) + 1 / 6. * (dv0) ** 2.)) * (np.abs(dv0) < tol2)) * (np.abs(defp) < tol3)
 
-    if (len(sites_i) > 1):
+    if (sys.has_qd and len(sites_i) > 1):
         jp[qd_links]/=1e10
         jp[qd1_i]+=jpt_qd
         jp[qd1_i-1]*=mu[qd1_i]/mu[qd1_i-1]
@@ -278,7 +278,7 @@ def get_jn_derivs(sys, efn, v, sites_i, sites_ip1, dl):
     mu = sys.mu_e[sites_i]
     ev0 = exp(-vp0)
 
-    if (len(sites_i) > 1):
+    if (sys.has_qd and len(sites_i) > 1):
         qd1_i=sys.qd_sites[0] if sites_i[0] == 0 else sys.qd_sites[0]-1
         qd_links=sys.qd_links if sites_i[0] ==0 else sys.qd_links-1
         qd2_i=qd1_i+1
@@ -327,7 +327,7 @@ def get_jn_derivs(sys, efn, v, sites_i, sites_ip1, dl):
 
     defn_i, defn_ip1, dv_i, dv_ip1=mu * defn_i, mu * defn_ip1, mu * dv_i, mu * dv_ip1
 
-    if (len(sites_i) > 1):
+    if (sys.has_qd and len(sites_i) > 1):
         dv_i[qd_links]/=1e10
         dv_ip1[qd_links]/=1e10
         defn_i[qd_links]/=1e10
@@ -373,7 +373,7 @@ def get_jp_derivs(sys, efp, v, sites_i, sites_ip1, dl):
     ev0 = exp(vp0)
 
 
-    if (len(sites_i) > 1):
+    if (sys.has_qd and len(sites_i) > 1):
         qd1_i=sys.qd_sites[0] if sites_i[0] == 0 else sys.qd_sites[0]-1
         qd_links=sys.qd_links if sites_i[0] ==0 else sys.qd_links-1
         qd2_i=qd1_i+1
@@ -418,7 +418,7 @@ def get_jp_derivs(sys, efp, v, sites_i, sites_ip1, dl):
 
     defp_i, defp_ip1, dv_i, dv_ip1=mu * defp_i, mu * defp_ip1, mu * dv_i, mu * dv_ip1
     ''''''
-    if (len(sites_i) > 1):
+    if (sys.has_qd and len(sites_i) > 1):
         dv_i[qd_links]/=1e10
         dv_ip1[qd_links]/=1e10
         defp_i[qd_links]/=1e10
