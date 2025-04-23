@@ -122,7 +122,7 @@ class Analyzer():
             show = True
 
         # add axis to figure
-        ax = fig.add_subplot(121)
+        ax = fig.add_subplot(221)
 
         X = X * 1e7  # in um
         vt = self.sys.scaling.energy
@@ -135,7 +135,7 @@ class Analyzer():
         #                      r'$\mathregular{E_{F_p}}$'])
 
 
-        ax.set_xlabel(r'Position [$\mathregular{nm}$]')
+        #ax.set_xlabel(r'Position [$\mathregular{nm}$]')
         ax.set_ylabel('Energy [eV]')
 
         #if show:
@@ -145,7 +145,7 @@ class Analyzer():
 
         sites = self.sites
         X0 = self.sys.xpts
-        X1 = self.sys.xpts[1:] - self.sys.dx*self.sys.scaling.length / 2
+        X1 = self.sys.xpts[:-1] + self.sys.dx*self.sys.scaling.length / 2
         V=self.v*self.sys.scaling.energy
         dv=V[1:]-V[:-1]
         E=-dv/self.sys.dx
@@ -155,21 +155,32 @@ class Analyzer():
             fig = plt.figure()
             show = True
 
+        borders_x=np.array([X0[self.sys.eml_sites[0]],X0[self.sys.eml_sites[0]],X0[self.sys.eml_sites[3]],X0[self.sys.eml_sites[3]]])
+        borders_y=1e6*np.array([-1,1,1,-1])
+
         # add axis to figure
-        ax = fig.add_subplot(131)
+        ax = fig.add_subplot(234)
+        ax.plot(borders_x*1e7,borders_y, lw=1, color='#000000', ls='--')
         l1, = ax.plot(X0*1e7,V, lw=2, color='#2e89cf', ls='-')
+        ax.set_ylim(min(V)-.1,max(V)+.1)
         ax.set_title(r'$\mathregular{V(x)}$')
         ax.set_xlabel(r'Position [$\mathregular{nm}$]')
-        ax = fig.add_subplot(132)
+
+        ax = fig.add_subplot(235)
+        ax.plot(borders_x*1e7,borders_y, lw=1, color='#000000', ls='--')
         l2, = ax.plot(X1*1e7,E, lw=2, color='#2e89cf', ls='-')
+        ax.set_ylim(min(E)-.01,max(E)+.01)
         ax.set_title(r'$\mathregular{E(x)}$')
         ax.set_xlabel(r'Position [$\mathregular{nm}$]')
-        ax = fig.add_subplot(133)
+
+
+        ax = fig.add_subplot(236)
         p = self.hole_density()
         n = self.electron_density()
         rho = self.sys.rho - n + p
+        ax.plot(borders_x*1e7,borders_y, lw=1, color='#000000', ls='--')
         l3, = ax.plot(X0*1e7,rho, lw=2, color='#cf392e', ls='-')
-        ax.set_ylim(-2,2)
+        ax.set_ylim(min(rho)-.01,max(rho)+.01)
         ax.set_title(r'$\mathregular{\rho(x)}$')
         ax.set_xlabel(r'Position [$\mathregular{nm}$]')
 
@@ -277,7 +288,7 @@ class Analyzer():
             show = True
 
         # add axis to figure
-        ax = fig.add_subplot(122)
+        ax = fig.add_subplot(222)
 
         X = X * 1e7  # in nm
 
@@ -289,9 +300,9 @@ class Analyzer():
         l3, = ax.plot(X,np.log10(np.abs(rho)+pow(10,-30)), lw=2,color='k', ls='--')
         ax.set_ylim(ymin=10, ymax=20)
 
-        fig.legend([l1, l2], [r'$\mathregular{n}$', r'$\mathregular{p}$'])
+        #fig.legend([l1, l2], [r'$\mathregular{n}$', r'$\mathregular{p}$'])
 
-        ax.set_xlabel(r'Position [$\mathregular{nm}$]')
+        #ax.set_xlabel(r'Position [$\mathregular{nm}$]')
 
         if show:
             plt.show()
