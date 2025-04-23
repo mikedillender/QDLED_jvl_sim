@@ -31,7 +31,7 @@ try:
     mumps_available = True
 except:
     pass
-
+print("mumps available = ",mumps_available)
         
 class NewtonError(Exception):
     pass
@@ -218,7 +218,11 @@ class Solver():
 
     def _sparse_solver(self, J, f):
         spsolve = lg.spsolve
-        if self.use_mumps and mumps_available: 
+        #print("f: ",len(f))
+        #print("J: ",J.shape)
+        #print(type(J))
+        if self.use_mumps and mumps_available:
+            #print("using mumps")
             spsolve = mumps.spsolve
         else:
             J = J.tocsr()
@@ -425,7 +429,11 @@ class Solver():
 
         # sites of the right contact
         nx = system.nx
-        s = [nx-1 + j*nx for j in range(system.ny)]
+
+        #qd2=system.qd_sites[1]
+        rc = nx-1
+        #rc = range(qd2+20,nx)
+        #print(rc)
 
         # sign of the voltage to apply
         if system.rho[nx-1] < 0:
@@ -456,7 +464,7 @@ class Solver():
                 logging.info("Applied voltage: {0} V".format(voltages[idx]))
 
             # Apply the voltage on the right contact
-            result['v'][s] = self.equilibrium[s] + q*vapp
+            result['v'][rc] = self.equilibrium[rc] + q*vapp
 
             # Call the Drift Diffusion Poisson solver
             result = self.solve(system, guess=result, tol=tol, periodic_bcs=periodic_bcs,\
@@ -476,6 +484,8 @@ class Solver():
                 try:
                     az = Analyzer(system, result)
                     J[idx] = az.full_current()
+
+                    logging.info("For {0} V, J = {1}.".format(voltages[idx], system.scaling.current*J[idx]))
                 except Exception:
                    logging.info("Could not compute the current for the applied voltage"\
                     + " {0} V (index {1}).".format(voltages[idx], idx))

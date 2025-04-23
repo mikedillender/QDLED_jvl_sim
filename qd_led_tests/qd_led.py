@@ -30,10 +30,10 @@ x = np.concatenate((np.linspace(0, dd, 300, endpoint=False),                    
                     np.linspace((t_total) - dd, (t_total), 300)))                       # R contact interface
 # Build system
 sys = sesame.Builder(x)
-#qd_mnc, qd_mpc=.13,.45
-qd_mnc, qd_mpc=.4,.4
-#qd_mns, qd_mps=.19,.6
-qd_mns, qd_mps=.4,.4
+qd_mnc, qd_mpc=.13,.45
+#qd_mnc, qd_mpc=.4,.4
+qd_mns, qd_mps=.19,.6
+#qd_mns, qd_mps=.4,.4
 # CdS material dictionary
 #hil = {'Nc': 2.5e19, 'Nv':2.5e19, 'Eg':1.57, 'epsilon':3, 'Et': 0,
 #        'mu_e':0.000322, 'mu_h':0.000322, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
@@ -44,18 +44,19 @@ hil = {'Nc': 2.5e19, 'Nv':2.5e19, 'Eg':1.9, 'epsilon':3, 'Et': 0,
 htl = {'Nc': 2.5e19, 'Nv':2.5e19, 'Eg':3, 'epsilon':5, 'Et': 0,
         'mu_e':0.002, 'mu_h':0.002, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
         'affinity': 2.6}
-qdc = {'Nc': 2.5e19*pow(qd_mnc,1.5), 'Nv':2.5e19*pow(qd_mpc,1.5), 'Eg':2.28, 'epsilon':9.4, 'Et': 0,
+
+qdc = {'Nc': 2.5e19*pow(qd_mnc,1.5), 'Nv':2.5e19*pow(qd_mpc,1.5), 'Eg':2.34, 'epsilon':9.4, 'Et': 0,
         'mu_e':0.000001, 'mu_h':0.000001, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
-        'affinity': 3.6,'Cn':pow(10,-32),'Cp':pow(10,-32),'B':pow(10,-14)}
+        'affinity': 3.63,'Cn':pow(10,-32),'Cp':pow(10,-32),'B':pow(10,-14)}
 # CdTe material dictionary'''''' ''''''
-'''etl = {'Nc': 2.5e19*pow(.24,1.5), 'Nv': 2.5e19*pow(.59,1.5), 'Eg':3.4, 'epsilon':5, 'Et': 0,
+etl = {'Nc': 2.5e19*pow(.24,1.5), 'Nv': 2.5e19*pow(.59,1.5), 'Eg':3.4, 'epsilon':5, 'Et': 0,
         'mu_e':0.002, 'mu_h':0.002, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
         'affinity': 4}
 '''
 etl = {'Nc': 2.5e19, 'Nv': 2.5e19, 'Eg':3.4, 'epsilon':5, 'Et': 0,
         'mu_e':0.002, 'mu_h':0.002, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
         'affinity': 4}
-
+'''
 # CdS region
 hil_region = lambda x: x<=t_hil
 htl_region = lambda x: np.logical_and(x>t_hil, x<=t_bqd)

@@ -70,13 +70,9 @@ def getF(sys, v, efn, efp, veq):
     # compute the currents
     jnx_s = get_jn(sys, efn, v, sites, sites + 1, dx)
     jnx_sm1 = get_jn(sys, efn, v, sites - 1, sites, dxm1)
-    #jny_s = get_jn(sys, efn, v, sites, (sites + Nx) % N, dy)
-    #jny_smN = get_jn(sys, efn, v, (sites - Nx) % N, sites, dym1)
 
     jpx_s = get_jp(sys, efp, v, sites, sites + 1, dx)
     jpx_sm1 = get_jp(sys, efp, v, sites - 1, sites, dxm1)
-    #jpy_s = get_jp(sys, efp, v, sites, (sites + Nx) % N, dy)
-    #jpy_smN = get_jp(sys, efp, v, (sites - Nx) % N, sites, dym1)
 
     # ------------------------------ fn ----------------------------------------
     fn = (jnx_s - jnx_sm1) / dxbar  + sys.g[sites] - r[sites]

@@ -86,11 +86,11 @@ sys.contact_S(Sn_left, Sp_left, Sn_right, Sp_right)
 # Specify the applied voltage values
 voltages = np.linspace(0,10,200)
 # Perform I-V calculation
-j = sesame.IVcurve(sys, voltages, 'symf/1dQD_V',htp=1,maxiter=2000)
+j = sesame.IVcurve(sys, voltages, 'p517_30/1dQD_V',htp=1,maxiter=2000)
 j = j * sys.scaling.current
 
 result = {'v':voltages, 'j':j}
-np.save('symf/qd_IV_values', result)
+np.save('p517_30/qd_IV_values', result)
 
 # plot I-V curve
 try:

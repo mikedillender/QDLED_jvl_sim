@@ -177,6 +177,39 @@ class Analyzer():
         if show:
             plt.show()
 
+    def current_diagram(self, fig=None):
+
+        sites = self.sites[1:-2].flatten()
+        dx = self.sys.dx[sites]
+        X0 = self.sys.xpts[sites]
+        X1 = X0+(dx/2)*self.sys.scaling.length
+
+        show = False
+        if fig is None:
+            fig = plt.figure()
+            show = True
+
+        # add axis to figure
+        ax = fig.add_subplot(111)
+
+        X = X1 * 1e7  # in nm
+
+        p = self.sys.scaling.current * get_jp(self.sys, self.efp, self.v, sites, sites + 1, dx)
+        n = self.sys.scaling.current * get_jn(self.sys, self.efn, self.v, sites, sites + 1, dx)
+        print(n)
+        print(p)
+        print(X)
+        l1, = ax.plot(X, (n), lw=2, color='#2e89cf', ls='-')
+        l2, = ax.plot(X, (p), lw=2, color='#cf392e', ls='-')
+
+        fig.legend([l1, l2], [r'$\mathregular{n}$', r'$\mathregular{p}$'])
+
+        ax.set_xlabel(r'Position [$\mathregular{nm}$]')
+
+
+        if show:
+            plt.show()
+
     def electron_density(self, location=None):
         """
         Compute the electron density across the system or on a line defined by two points.
@@ -709,6 +742,7 @@ class Analyzer():
         sites_ip1 = [nx//2+1+j*nx  for j in range(ny)]
         # And the corresponding lattice dimensions
         dl = self.sys.dx[self.sys.nx//2]
+        #print(sites_i)
 
         # Compute the electron and hole currents
         jn = get_jn(self.sys, self.efn, self.v, sites_i, sites_ip1, dl)
