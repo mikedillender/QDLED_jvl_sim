@@ -38,10 +38,10 @@ qd_mns, qd_mps=.19,.6
 #hil = {'Nc': 2.5e19, 'Nv':2.5e19, 'Eg':1.57, 'epsilon':3, 'Et': 0,
 #        'mu_e':0.000322, 'mu_h':0.000322, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
 #        'affinity': 3.6}
-hil = {'Nc': 2.5e19, 'Nv':2.5e19, 'Eg':1.9, 'epsilon':3, 'Et': 0,
+hil = {'Nc': 2.5e19, 'Nv':2.5e19, 'Eg':1.9, 'epsilon':7, 'Et': 0,
         'mu_e':0.000322, 'mu_h':0.000322, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
         'affinity': 3.6}
-htl = {'Nc': 2.5e19, 'Nv':2.5e19, 'Eg':3, 'epsilon':5, 'Et': 0,
+htl = {'Nc': 2.5e19, 'Nv':2.5e19, 'Eg':3, 'epsilon':4, 'Et': 0,
         'mu_e':0.002, 'mu_h':0.002, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
         'affinity': 2.6}
 
@@ -49,7 +49,7 @@ qdc = {'Nc': 2.5e19*pow(qd_mnc,1.5), 'Nv':2.5e19*pow(qd_mpc,1.5), 'Eg':2.34, 'ep
         'mu_e':0.000001, 'mu_h':0.000001, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
         'affinity': 3.63,'Cn':pow(10,-32),'Cp':pow(10,-32),'B':pow(10,-14)}
 # CdTe material dictionary'''''' ''''''
-etl = {'Nc': 2.5e19*pow(.24,1.5), 'Nv': 2.5e19*pow(.59,1.5), 'Eg':3.4, 'epsilon':5, 'Et': 0,
+etl = {'Nc': 2.5e19*pow(.24,1.5), 'Nv': 2.5e19*pow(.59,1.5), 'Eg':3.4, 'epsilon':8, 'Et': 0,
         'mu_e':0.002, 'mu_h':0.002, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
         'affinity': 4}
 '''
@@ -72,11 +72,11 @@ sys.add_qd(1.0,qd_mns=qd_mns,qd_mps=qd_mps,location=qd_region)
 # Add the donors
 sys.add_donor(1e17, etl_region)
 # Add the acceptors
-sys.add_acceptor(1e17, htl_region)
+sys.add_acceptor(1e13, htl_region)
 sys.add_acceptor(5e18, hil_region)
 
 # Define contacts: CdS contact is Ohmic, CdTe contact is Schottky
-Lcontact_type, Rcontact_type = 'Schottky', 'Schottky'
+Lcontact_type, Rcontact_type = 'Ohmic', 'Schottky'
 #Lcontact_type, Rcontact_type = 'Ohmic', 'Ohmic'
 Lcontact_workFcn, Rcontact_workFcn = 5.3, 4.06   # Lcontact work function irrelevant because L contact is Ohmic
 # Add the contacts
@@ -93,11 +93,11 @@ sys.contact_S(Sn_left, Sp_left, Sn_right, Sp_right)
 # Specify the applied voltage values
 voltages = np.linspace(0,10,200)
 # Perform I-V calculation
-j = sesame.IVcurve(sys, voltages, 'rr2/1dQD_V',htp=1,maxiter=2000)
+j = sesame.IVcurve(sys, voltages, 'pohm_in_k2/1dQD_V',htp=1,maxiter=2000)
 j = j * sys.scaling.current
 
 result = {'v':voltages, 'j':j}
-np.save('rr2/qd_IV_values', result)
+np.save('pohm_in_k2/qd_iv', result)
 
 # plot I-V curve
 try:

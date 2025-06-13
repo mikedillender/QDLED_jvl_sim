@@ -130,7 +130,8 @@ class Analyzer():
         l2, = ax.plot(X, vt*self.efp[sites], lw=2, color='#cf392e', ls='--')
         l3, = ax.plot(X, -vt * (self.v[sites] + self.sys.bl[sites]), lw=2, color='k', ls='-')
         l4, = ax.plot(X, -vt * (self.v[sites] + self.sys.bl[sites] + self.sys.Eg[sites]), lw=2, color='k', ls='-')
-
+        print("chi :")
+        print(self.sys.bl[sites]*vt)
         #fig.legend([l1, l2], [r'$\mathregular{E_{F_n}}$',\
         #                      r'$\mathregular{E_{F_p}}$'])
 
@@ -140,6 +141,16 @@ class Analyzer():
 
         #if show:
         #    plt.show()
+
+    def saveCSV(self):
+        X0 = self.sys.xpts#*1e7
+        #vt = self.sys.scaling.energy
+        V=self.v#*vt
+        Ev=-self.sys.bl-self.sys.Eg#*vt
+        Nv=np.log(self.sys.Nv)
+        efp=self.efp#*self.sys.scaling.energy
+        stacked=np.stack((X0,V,Ev,Nv,efp),axis=0)
+        np.savetxt("p_data.csv", stacked, delimiter=",", fmt="%.10f")
 
     def field_diagram(self, fig=None):
 
@@ -205,13 +216,13 @@ class Analyzer():
 
         X = X1 * 1e7  # in nm
 
-        p = self.sys.scaling.current * get_jp(self.sys, self.efp, self.v, sites, sites + 1, dx)
-        n = self.sys.scaling.current * get_jn(self.sys, self.efn, self.v, sites, sites + 1, dx)
-        print(n)
-        print(p)
-        print(X)
-        l1, = ax.plot(X, (n), lw=2, color='#2e89cf', ls='-')
-        l2, = ax.plot(X, (p), lw=2, color='#cf392e', ls='-')
+        p1 = self.sys.scaling.current * get_jp(self.sys, self.efp, self.v, sites, sites + 1, dx)
+        n1 = self.sys.scaling.current * get_jn(self.sys, self.efn, self.v, sites, sites + 1, dx)
+        print(n1)
+        print(p1)
+        print("current^")
+        l1, = ax.plot(X, (n1), lw=2, color='#2e89cf', ls='-')
+        l2, = ax.plot(X, (p1), lw=2, color='#cf392e', ls='-')
 
         fig.legend([l1, l2], [r'$\mathregular{n}$', r'$\mathregular{p}$'])
 
@@ -274,6 +285,18 @@ class Analyzer():
             _, sites = self.line(self.sys, p1, p2)
         p = get_p(self.sys, self.efp, self.v, sites)
         return p
+
+    def total_charge(self):
+        dx=self.sys.dx
+        L=(dx[0:-2]+dx[1:-1])/2
+        p = self.hole_density()
+        n = self.electron_density()
+        rho = self.sys.rho - n + p
+        print(len(L),len(rho))
+        trho=L*rho[1:-2]
+        net=trho.sum()
+        tot=abs(trho).sum()
+        return [net, tot]
 
     def carrier_densities(self, location, fig=None):
 
