@@ -2,9 +2,9 @@ import os
 import sesame
 import numpy as np
 import matplotlib.pyplot as plt
-folder="pohm_in"
+folder="pohm_th"
 f_name="1dQD_V_"
-num_files=150
+num_files=145
 step=1
 n=int(np.floor(num_files/step))+1
 pcharge=np.zeros(n)
@@ -32,7 +32,7 @@ l1, = ax.plot(volt,pcharge, lw=2, color='#2e89cf', ls='-')
 l2, = ax.plot(volt,ncharge, lw=2, color='#cf392e', ls='--')
 plt.title("charge")
 ax = fig.add_subplot(212)
-l3, = ax.plot(voltc,cap, lw=2, color='#2e89cf', ls='-')
+l3, = ax.plot(voltc,-cap, lw=2, color='#2e89cf', ls='-')
 plt.title("capacitance")
 plt.show()
 '''

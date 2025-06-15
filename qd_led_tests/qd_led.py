@@ -5,7 +5,7 @@ from scipy.io import savemat
 
 
 t_hil = 20*1e-7
-t_htl = 40e-7
+t_htl = 80e-7
 t_etl = 40*1e-7
 t_bqd = t_hil+t_htl
 r_qdc = 2.75e-7
@@ -22,7 +22,7 @@ dd2 = 1.5e-7
 x = np.concatenate((np.linspace(0, dd, 300, endpoint=False),                        # L contact interface
                     np.linspace(dd, t_hil-dd2, 100, endpoint=False),                    # material 1
                     np.linspace(t_hil - dd2, t_hil + dd2, 300, endpoint=False),             # interface 1
-                    np.linspace(t_hil + dd2, (t_bqd) - dd, 200, endpoint=False),       # material 2
+                    np.linspace(t_hil + dd2, (t_bqd) - dd, 400, endpoint=False),       # material 2
                     np.linspace((t_bqd) - dd, (t_bqd), 200, endpoint=False),      # htl-qd interface
                     [(t_bqd)+r_qd, (t_aqd)-r_qd],      # QD
                     np.linspace((t_aqd), (t_aqd) + dd, 200, endpoint=False),      # qd-etl interface
@@ -91,13 +91,13 @@ sys.contact_S(Sn_left, Sp_left, Sn_right, Sp_right)
 
 
 # Specify the applied voltage values
-voltages = np.linspace(0,10,200)
+voltages = np.linspace(0,-10,200)
 # Perform I-V calculation
-j = sesame.IVcurve(sys, voltages, 'pohm_in_k2/1dQD_V',htp=1,maxiter=2000)
+j = sesame.IVcurve(sys, voltages, 'rev_t1/1dQD_V',htp=1,maxiter=2000)
 j = j * sys.scaling.current
 
 result = {'v':voltages, 'j':j}
-np.save('pohm_in_k2/qd_iv', result)
+np.save('rev_t1/qd_iv', result)
 
 # plot I-V curve
 try:
