@@ -298,6 +298,23 @@ class Analyzer():
         tot=abs(trho).sum()
         return [net, tot]
 
+    def total_charge2(self):
+        dx = self.sys.dx
+        L = (dx[0:-2] + dx[1:-1]) / 2
+        p = self.hole_density()
+        n = self.electron_density()
+        nrho = self.sys.rho - n + p
+        nrho = L * nrho[1:-2]
+        n = L * n[1:-2]
+        p = L * p[1:-2]
+        rho1 = L * self.sys.rho[1:-2]
+        space1=nrho[ np.logical_and(rho1>0, abs(rho1)>n)].sum()-nrho[np.logical_and(rho1+p<0 , rho1<0)].sum()
+        carriers=nrho[np.logical_and(rho1>0, abs(rho1)<n)].sum()-nrho[np.logical_and(rho1+p>0 , rho1<0)].sum()+nrho[rho1==0].sum()
+        #trho = L * rho[1:-2]
+        #net = trho.sum()
+        #tot = abs(trho).sum()
+        return [space1, carriers]
+
     def carrier_densities(self, location, fig=None):
 
         sites = self.sites

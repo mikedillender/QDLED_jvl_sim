@@ -4,11 +4,11 @@ import scipy.io
 from scipy.io import savemat
 
 
-t_hil = 20*1e-7
-t_htl = 80e-7
-t_etl = 40*1e-7
+t_hil = 30*1e-7
+t_htl = 25e-7
+t_etl = 20*1e-7
 t_bqd = t_hil+t_htl
-r_qdc = 2.75e-7
+r_qdc = 4e-7
 r_qds = 1e-7
 r_qd = r_qdc+r_qds
 t_aqd=t_hil+t_htl+4*(r_qd)
@@ -22,7 +22,7 @@ dd2 = 1.5e-7
 x = np.concatenate((np.linspace(0, dd, 300, endpoint=False),                        # L contact interface
                     np.linspace(dd, t_hil-dd2, 100, endpoint=False),                    # material 1
                     np.linspace(t_hil - dd2, t_hil + dd2, 300, endpoint=False),             # interface 1
-                    np.linspace(t_hil + dd2, (t_bqd) - dd, 400, endpoint=False),       # material 2
+                    np.linspace(t_hil + dd2, (t_bqd) - dd, 200, endpoint=False),       # material 2
                     np.linspace((t_bqd) - dd, (t_bqd), 200, endpoint=False),      # htl-qd interface
                     [(t_bqd)+r_qd, (t_aqd)-r_qd],      # QD
                     np.linspace((t_aqd), (t_aqd) + dd, 200, endpoint=False),      # qd-etl interface
@@ -40,18 +40,18 @@ qd_mns, qd_mps=.19,.6
 #        'affinity': 3.6}
 hil = {'Nc': 2.5e19, 'Nv':2.5e19, 'Eg':1.9, 'epsilon':7, 'Et': 0,
         'mu_e':0.000322, 'mu_h':0.000322, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
-        'affinity': 3.6}
-htl = {'Nc': 2.5e19, 'Nv':2.5e19, 'Eg':3, 'epsilon':4, 'Et': 0,
-        'mu_e':0.002, 'mu_h':0.002, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
-        'affinity': 2.6}
+        'affinity': 3.2}
+htl = {'Nc': 2.5e19, 'Nv':2.5e19, 'Eg':2.9, 'epsilon':4, 'Et': 0,
+        'mu_e':0.00002, 'mu_h':0.00002, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
+        'affinity': 2.4}
 
-qdc = {'Nc': 2.5e19*pow(qd_mnc,1.5), 'Nv':2.5e19*pow(qd_mpc,1.5), 'Eg':2.34, 'epsilon':9.4, 'Et': 0,
+qdc = {'Nc': 2.5e19*pow(qd_mnc,1.5), 'Nv':2.5e19*pow(qd_mpc,1.5), 'Eg':2.54, 'epsilon':9.4, 'Et': 0,
         'mu_e':0.000001, 'mu_h':0.000001, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
-        'affinity': 3.63,'Cn':pow(10,-32),'Cp':pow(10,-32),'B':pow(10,-14)}
+        'affinity': 3.03,'Cn':pow(10,-32),'Cp':pow(10,-32),'B':pow(10,-14)}
 # CdTe material dictionary'''''' ''''''
 etl = {'Nc': 2.5e19*pow(.24,1.5), 'Nv': 2.5e19*pow(.59,1.5), 'Eg':3.4, 'epsilon':8, 'Et': 0,
         'mu_e':0.002, 'mu_h':0.002, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
-        'affinity': 4}
+        'affinity': 3.8}
 '''
 etl = {'Nc': 2.5e19, 'Nv': 2.5e19, 'Eg':3.4, 'epsilon':5, 'Et': 0,
         'mu_e':0.002, 'mu_h':0.002, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
@@ -70,15 +70,15 @@ sys.add_material(hil, hil_region)     # adding CdTe
 sys.add_material(qdc, qd_region)     # adding CdTe
 sys.add_qd(1.0,qd_mns=qd_mns,qd_mps=qd_mps,location=qd_region)
 # Add the donors
-sys.add_donor(1e17, etl_region)
+#sys.add_donor(1e17, etl_region)
 # Add the acceptors
-sys.add_acceptor(1e13, htl_region)
+#sys.add_acceptor(1e12, htl_region)
 sys.add_acceptor(5e18, hil_region)
 
 # Define contacts: CdS contact is Ohmic, CdTe contact is Schottky
 Lcontact_type, Rcontact_type = 'Ohmic', 'Schottky'
 #Lcontact_type, Rcontact_type = 'Ohmic', 'Ohmic'
-Lcontact_workFcn, Rcontact_workFcn = 5.3, 4.06   # Lcontact work function irrelevant because L contact is Ohmic
+Lcontact_workFcn, Rcontact_workFcn = 4.9, 4.06   # Lcontact work function irrelevant because L contact is Ohmic
 # Add the contacts
 sys.contact_type(Lcontact_type, Rcontact_type, Lcontact_workFcn, Rcontact_workFcn)
 
@@ -91,13 +91,13 @@ sys.contact_S(Sn_left, Sp_left, Sn_right, Sp_right)
 
 
 # Specify the applied voltage values
-voltages = np.linspace(0,-10,200)
+voltages = np.linspace(0,10,200)
 # Perform I-V calculation
-j = sesame.IVcurve(sys, voltages, 'rev_t1/1dQD_V',htp=1,maxiter=2000)
+j = sesame.IVcurve(sys, voltages, 'low_WFa/1dQD_V',htp=1,maxiter=1000)
 j = j * sys.scaling.current
 
 result = {'v':voltages, 'j':j}
-np.save('rev_t1/qd_iv', result)
+np.save('low_WFa/qd_iv', result)
 
 # plot I-V curve
 try:

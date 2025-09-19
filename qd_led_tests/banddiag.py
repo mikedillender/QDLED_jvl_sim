@@ -1,7 +1,7 @@
 import sesame
 import numpy as np
 import matplotlib.pyplot as plt
-sys, result = sesame.load_sim('pohm_in/1dQD_V_28.gzip')
+sys, result = sesame.load_sim('low_WFa/1dQD_V_100.gzip')
 az = sesame.Analyzer(sys,result)
 p1 = (0,0)
 p2 = (150e-7,0)
