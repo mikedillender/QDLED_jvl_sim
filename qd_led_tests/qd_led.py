@@ -1,3 +1,5 @@
+import os
+
 import sesame
 import numpy as np
 import scipy.io
@@ -78,7 +80,7 @@ sys.add_acceptor(5e18, hil_region)
 # Define contacts: CdS contact is Ohmic, CdTe contact is Schottky
 Lcontact_type, Rcontact_type = 'Ohmic', 'Schottky'
 #Lcontact_type, Rcontact_type = 'Ohmic', 'Ohmic'
-Lcontact_workFcn, Rcontact_workFcn = 4.9, 4.06   # Lcontact work function irrelevant because L contact is Ohmic
+Lcontact_workFcn, Rcontact_workFcn = 5.1, 4.06   # Lcontact work function irrelevant because L contact is Ohmic
 # Add the contacts
 sys.contact_type(Lcontact_type, Rcontact_type, Lcontact_workFcn, Rcontact_workFcn)
 
@@ -93,21 +95,28 @@ sys.contact_S(Sn_left, Sp_left, Sn_right, Sp_right)
 # Specify the applied voltage values
 voltages = np.linspace(0,10,200)
 # Perform I-V calculation
-j = sesame.IVcurve(sys, voltages, 'low_WFa/1dQD_V',htp=1,maxiter=1000)
+export_folder="ohm51"
+os.makedirs(export_folder, exist_ok=True)
+j = sesame.IVcurve(sys, voltages, export_folder+"/1dQD_V",htp=1,maxiter=1000)
 j = j * sys.scaling.current
 
 result = {'v':voltages, 'j':j}
-np.save('low_WFa/qd_iv', result)
+np.save(export_folder+"/qd_iv", result)
 
 # plot I-V curve
 try:
     import matplotlib.pyplot as plt
-    plt.plot(voltages, j,'-o')
-    plt.xlabel('Voltage [V]')
-    plt.ylabel('Current [A/cm^2]')
-    plt.grid()     # add grid
-    plt.show()     # show the plot on the screen
-# no matplotlib installed
+
+    fig, ax = plt.subplots()   # creates a new figure and axes
+
+    ax.plot(voltages, j, '-o')
+    ax.set_xlabel('Voltage [V]')
+    ax.set_ylabel('Current [A/cm^2]')
+    ax.set_yscale('log')
+    ax.grid(True)
+
+    plt.show()
+
 except ImportError:
     print("Matplotlib not installed, can't make plot")
 

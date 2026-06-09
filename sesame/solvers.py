@@ -308,13 +308,15 @@ class Solver():
                             fig = plt.figure()
                             X0 = system.xpts
                             ax = fig.add_subplot(111)
-                            vx, vefn, vefp = x[2::3], x[0::3], x[1::3]
-                            l1, = ax.plot(X0 * 1e7, vx, lw=2, color='k', ls='-')
-                            l2, = ax.plot(X0 * 1e7, vefn, lw=2, color='#cf392e', ls='-')
-                            l3, = ax.plot(X0 * 1e7, vefp, lw=2, color='#2e89cf', ls='-')
+                            vx, vefn, vefp = dx[2::3], dx[0::3], dx[1::3]
+                            l1, = ax.plot(X0 * 1e7, -system.bl - system.Eg - vx, lw=2, color='k', ls='-')
+                            l2, = ax.plot(X0 * 1e7, -system.bl - vx, lw=2, color='k', ls='-')
+                            l3, = ax.plot(X0 * 1e7, vefn, lw=2, color='#cf392e', ls='-')
+                            l4, = ax.plot(X0 * 1e7, vefp, lw=2, color='#2e89cf', ls='-')
                             plt.title("error")
-                            fig.legend([l1, l2, l3],
-                                       [r'$\mathregular{v}$', r'$\mathregular{E_{fn}}$', r'$\mathregular{E_{fp}}$'])
+                            fig.legend([l1, l2, l3, l4],
+                                       [r'$\mathregular{E_v}$', r'$\mathregular{E_c}$', r'$\mathregular{E_{fn}}$',
+                                        r'$\mathregular{E_{fp}}$'])
                             plt.show()
                             break
                         if np.isnan(error) or error > 1e30:
@@ -324,11 +326,12 @@ class Solver():
                             X0 = system.xpts
                             ax = fig.add_subplot(111)
                             vx, vefn, vefp = dx[2::3], dx[0::3], dx[1::3]
-                            l1, = ax.plot(X0 * 1e7, vx, lw=2, color='k', ls='-')
-                            l2, = ax.plot(X0 * 1e7, vefn, lw=2, color='#cf392e', ls='-')
-                            l3, = ax.plot(X0 * 1e7, vefp, lw=2, color='#2e89cf', ls='-')
+                            l1, = ax.plot(X0 * 1e7, -system.bl-system.Eg-vx, lw=2, color='k', ls='-')
+                            l2, = ax.plot(X0 * 1e7, -system.bl-vx, lw=2, color='k', ls='-')
+                            l3, = ax.plot(X0 * 1e7, vefn, lw=2, color='#cf392e', ls='-')
+                            l4, = ax.plot(X0 * 1e7, vefp, lw=2, color='#2e89cf', ls='-')
                             plt.title("error")
-                            fig.legend([l1, l2, l3], [r'$\mathregular{v}$', r'$\mathregular{E_{fn}}$',r'$\mathregular{E_{fp}}$'])
+                            fig.legend([l1, l2, l3,l4], [r'$\mathregular{E_v}$',r'$\mathregular{E_c}$', r'$\mathregular{E_{fn}}$',r'$\mathregular{E_{fp}}$'])
                             plt.show()
                             raise NewtonError
                             break
@@ -355,9 +358,14 @@ class Solver():
                     X0=system.xpts
                     ax = fig.add_subplot(111)
                     vx,vefn,vefp=x[2::3], x[0::3], x[1::3]
-                    l1, = ax.plot(X0 * 1e7, vx, lw=2, color='k', ls='-')
-                    l2, = ax.plot(X0 * 1e7, vefn, lw=2, color='#2e89cf', ls='-')
-                    l3, = ax.plot(X0 * 1e7, vefp, lw=2, color='#cf392e', ls='-')
+                    l1, = ax.plot(X0 * 1e7, -system.bl - system.Eg - vx, lw=2, color='k', ls='-')
+                    l2, = ax.plot(X0 * 1e7, -system.bl - vx, lw=2, color='k', ls='-')
+                    l3, = ax.plot(X0 * 1e7, vefn, lw=2, color='#cf392e', ls='-')
+                    l4, = ax.plot(X0 * 1e7, vefp, lw=2, color='#2e89cf', ls='-')
+                    plt.title("error")
+                    fig.legend([l1, l2, l3, l4],
+                               [r'$\mathregular{E_v}$', r'$\mathregular{E_c}$', r'$\mathregular{E_{fn}}$',
+                                r'$\mathregular{E_{fp}}$'])
                     plt.show()
 
                     break
