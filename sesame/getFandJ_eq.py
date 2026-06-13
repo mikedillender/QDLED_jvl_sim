@@ -82,8 +82,6 @@ def getFandJ_eq(sys, v):
     #------------------------------ fv ----------------------------------------
     eps_m1x = .5 * (sys.epsilon[sites-1] + sys.epsilon[sites])
     eps_p1x = .5 * (sys.epsilon[sites+1] + sys.epsilon[sites])
-    eps_m1y = .5 * (sys.epsilon[(sites-Nx) % Num] + sys.epsilon[sites])
-    eps_p1y = .5 * (sys.epsilon[(sites+Nx) % Num] + sys.epsilon[sites])
 
     fvx = (eps_m1x*(v[sites] - v[sites-1]) / dxm1 - eps_p1x*(v[sites+1] - v[sites])/dx) / dxbar
     fv = fvx - rho[sites]

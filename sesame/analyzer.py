@@ -130,8 +130,8 @@ class Analyzer():
         l2, = ax.plot(X, vt*self.efp[sites], lw=2, color='#cf392e', ls='--')
         l3, = ax.plot(X, -vt * (self.v[sites] + self.sys.bl[sites]), lw=2, color='k', ls='-')
         l4, = ax.plot(X, -vt * (self.v[sites] + self.sys.bl[sites] + self.sys.Eg[sites]), lw=2, color='k', ls='-')
-        print("chi :")
-        print(self.sys.bl[sites]*vt)
+        #print("chi :")
+        #print(self.sys.bl[sites]*vt)
         #fig.legend([l1, l2], [r'$\mathregular{E_{F_n}}$',\
         #                      r'$\mathregular{E_{F_p}}$'])
 
@@ -218,9 +218,9 @@ class Analyzer():
 
         p1 = self.sys.scaling.current * get_jp(self.sys, self.efp, self.v, sites, sites + 1, dx)
         n1 = self.sys.scaling.current * get_jn(self.sys, self.efn, self.v, sites, sites + 1, dx)
-        print(n1)
-        print(p1)
-        print("current^")
+        #print(n1)
+        #print(p1)
+        #print("current^")
         l1, = ax.plot(X, (n1), lw=2, color='#2e89cf', ls='-')
         l2, = ax.plot(X, (p1), lw=2, color='#cf392e', ls='-')
 
@@ -808,3 +808,50 @@ class Analyzer():
 
 
         return j
+
+    def full_emission(self):
+
+        sites=self.sys.eml_sites
+        n = get_n(self.sys, self.efn, self.v, sites)
+        p = get_p(self.sys, self.efp, self.v, sites)
+        ni2 = self.sys.ni[sites]**2
+        r = self.sys.B[sites] * (n*p - ni2)
+
+        n = get_n(self.sys, self.efn, self.v, sites)
+        p = get_p(self.sys, self.efp, self.v, sites)
+        ni2 = self.sys.ni[sites]**2
+        r_aug = self.sys.Cn[sites] * n * (n*p - ni2) + self.sys.Cp[sites] * p * (n*p - ni2)
+
+        n1 = self.sys.n1[sites]
+        p1 = self.sys.p1[sites]
+        tau_h = self.sys.tau_h[sites]
+        tau_e = self.sys.tau_e[sites]
+        r_srh = (n*p - ni2)/(tau_h * (n+n1) + tau_e*(p+p1))
+        print(r)
+        print(r_aug)
+        print(r_srh)
+        eq=sum(r)/sum(r+r_aug+r_srh)
+        print(eq)
+        return eq
+
+    def print_emission(self):
+
+        sites=self.sys.eml_sites
+        n = get_n(self.sys, self.efn, self.v, sites)
+        p = get_p(self.sys, self.efp, self.v, sites)
+        ni2 = self.sys.ni[sites]**2
+        r = self.sys.B[sites] * (n*p - ni2)
+        print("Radiative:",r)
+        r_aug = self.sys.Cn[sites] * n * (n*p - ni2) + self.sys.Cp[sites] * p * (n*p - ni2)
+        print("Auger:",r_aug)
+
+        ni2 = self.sys.ni[sites]**2
+        n1 = self.sys.n1[sites]
+        p1 = self.sys.p1[sites]
+        tau_h = self.sys.tau_h[sites]
+        tau_e = self.sys.tau_e[sites]
+        n = get_n(self.sys, self.efn, self.v, sites)
+        p = get_p(self.sys, self.efp, self.v, sites)
+        r_srh = (n*p - ni2)/(tau_h * (n+n1) + tau_e*(p+p1))
+        print("SRH:",r_srh)
+        return sum(r)

@@ -152,10 +152,6 @@ def get_jn(sys, efn, v, sites_i, sites_ip1, dl):
         mu_E=(E_etl>0)*np.sqrt(np.pow(np.abs(E_etl),3)/F0)*lambdae/sys.scaling.current
         jni_qd=mu_E*(sys.qd_density-n_qd2)*n_etl
 
-
-        #n = sys.Nc[sites] * exp(+sys.bl[sites] + efn[sites] + v[sites])
-
-
     jn = (    mu * exp(efnp1)*(1 - exp(efnp0-efnp1)) / dl * dv / (-exp(-vp0) * (1 - exp(dv))) * (np.abs(dv0) >= tol2) + \
          -1 * mu * exp(efnp1)*(1 - exp(efnp0-efnp1)) / dl / (-exp(-vp0) * (1 + .5 * dv0 + 1/6.*(dv0)**2)) * (np.abs(dv0) < tol2)) * (np.abs(defn)>=tol3) + \
          (    mu * exp(efnp1)*(-(efnp0 - efnp1))     / dl * dv / (-exp(-vp0) * (1 - exp(dv))) * (np.abs(dv0) >= tol2) + \
@@ -164,9 +160,11 @@ def get_jn(sys, efn, v, sites_i, sites_ip1, dl):
     if (sys.has_qd and len(sites_i) > 1):
         jn[qd_links]/=1e5
         jn[qd1_i]+= jnt_qd
+        jn[qd2_i]+= jni_qd
         #print("jn at etl interface was ",jn[qd2_i],', adding ', jni_qd,' (vt = ',jnt_qd,")")
         #print(" - n_qd1 ",n_qd1,", n_qd2 ", n_qd2,", n_etl ",n_etl)
-        jn[qd2_i]+= jni_qd
+        #jn[sites_i < qd1_i] = 0
+
 
 
 
@@ -254,6 +252,7 @@ def get_jp(sys, efp, v, sites_i, sites_ip1, dl):
         #print("jp at htl interface was ",jp[qd1_i-1],', adding ', jpi_qd,' (vt = ',jpt_qd,")")
         #print(" - p_htl ",p_htl,", n_qd1 ",p_qd1,", n_qd2 ", p_qd2)
         jp[qd1_i-1]+=+jpi_qd
+        #jp[sites_i >= qd2_i] = 0
     #if(len(sites_i)>1):
     #    print('hi',jpt_qd,jp[qd1_i])
 
@@ -332,6 +331,11 @@ def get_jn_derivs(sys, efn, v, sites_i, sites_ip1, dl):
         dv_ip1[qd_links]/=1e5
         defn_i[qd_links]/=1e5
         defn_ip1[qd_links]/=1e5
+        '''
+        dv_i[sites_i < qd1_i]=0
+        dv_ip1[sites_i < qd1_i]=0
+        defn_i[sites_i < qd1_i]=0
+        defn_ip1[sites_i < qd1_i]=0'''
         #print('dv was ',dv_i[qd1_i],", now ",-vd*n_qd1)
         # dot to dot
         dv_i[qd1_i] += - vd*n_qd1
@@ -343,7 +347,6 @@ def get_jn_derivs(sys, efn, v, sites_i, sites_ip1, dl):
         #etl injection
         dv_i[qd2_i] += + (3*jni_qd/(2*abs(dphi))-mu_E*n_qd2*n_etl)
         dv_ip1[qd2_i] += + jni_qd*(-3/(2*abs(dphi))+1)
-
         defn_i[qd2_i] += - mu_E*n_qd2*n_etl
         defn_ip1[qd2_i] += + jni_qd
 
@@ -423,6 +426,11 @@ def get_jp_derivs(sys, efp, v, sites_i, sites_ip1, dl):
         dv_ip1[qd_links]/=1e5
         defp_i[qd_links]/=1e5
         defp_ip1[qd_links]/=1e5
+        '''
+        dv_i[sites_i >= qd2_i]=0
+        dv_ip1[sites_i >= qd2_i]=0
+        defp_i[sites_i >= qd2_i]=0
+        defp_ip1[sites_i >= qd2_i]=0'''
 
         dv_i[qd1_i-1]*=mu[qd1_i]/mu[qd1_i-1]
         dv_ip1[qd1_i-1]*=mu[qd1_i]/mu[qd1_i-1]
@@ -438,8 +446,8 @@ def get_jp_derivs(sys, efp, v, sites_i, sites_ip1, dl):
         dv_ip1[qd1_i-1] += -(3*jpi_qd/(2*abs(dphi))+mu_E*p_qd1*p_htl)
         defp_i[qd1_i-1] += -jpi_qd
         defp_ip1[qd1_i-1] += mu_E*p_htl*p_qd1
-        #print("p_htl = ",p_htl,", p_qd1 = ",p_qd1," p_qd2 = ",p_qd2)
-        #print("htl dv_i",  dv_i[qd1_i-1], ', dv_ip1 ', dv_ip1[qd1_i-1], " defn_i  ", defp_i[qd1_i-1], " defn_ip1  ", defp_ip1[qd1_i-1], ", (",dphi,")")#'''
+        #print("p_htl = ",p_htl,", p_qd1 = ",p_qd1," (",p_qd1/sys.qd_density,") p_qd2 = ",p_qd2," (",p_qd2/sys.qd_density,")")
+        #print("htl dv_i",  dv_i[qd1_i-1], ', dv_ip1 ', dv_ip1[qd1_i-1], " defp_i  ", defp_i[qd1_i-1], " defp_ip1  ", defp_ip1[qd1_i-1], ", (",dphi,")")#'''
         #print("   p_htl = ", p_htl," p_qd1 = ", p_qd1," p_qd2 = ", p_qd2)
         #print("qd2 dv_i",  dv_i[qd2_i], ', dv_ip1 ', dv_ip1[qd2_i], " defn_i  ", defp_i[qd1_i], " defn_ip1  ", defp_ip1[qd1_i], ", (",dphi,")")#'''
 

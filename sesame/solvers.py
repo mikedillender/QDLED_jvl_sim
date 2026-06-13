@@ -270,6 +270,7 @@ class Solver():
             while not converged:
                 cc = cc + 1
                 # break if no solution found after maxiterations
+
                 if cc == 100:
                     print("try decreasing voltage :D")
                     if(x[system.qd_sites[0]*3+2]>x[(system.qd_sites[0]-1)*3+2]):
@@ -308,15 +309,43 @@ class Solver():
                             fig = plt.figure()
                             X0 = system.xpts
                             ax = fig.add_subplot(111)
-                            vx, vefn, vefp = dx[2::3], dx[0::3], dx[1::3]
-                            l1, = ax.plot(X0 * 1e7, -system.bl - system.Eg - vx, lw=2, color='k', ls='-')
-                            l2, = ax.plot(X0 * 1e7, -system.bl - vx, lw=2, color='k', ls='-')
-                            l3, = ax.plot(X0 * 1e7, vefn, lw=2, color='#cf392e', ls='-')
-                            l4, = ax.plot(X0 * 1e7, vefp, lw=2, color='#2e89cf', ls='-')
+                            vx, vefn, vefp = f[2::3], f[0::3], f[1::3]
+                            #l1, = ax.plot(X0 * 1e7, -system.bl - system.Eg - vx, lw=2, color='k', ls='-')
+                            # l2, = ax.plot(X0 * 1e7, -system.bl - vx, lw=2, color='k', ls='-')
+                            l1, = ax.plot(X0 * 1e7, vx, lw=2, color='k', ls='-')
+                            l2, = ax.plot(X0 * 1e7, vefn, lw=2, color='#cf392e', ls='-')
+                            l3, = ax.plot(X0 * 1e7, vefp, lw=2, color='#2e89cf', ls='-')
                             plt.title("error")
-                            fig.legend([l1, l2, l3, l4],
-                                       [r'$\mathregular{E_v}$', r'$\mathregular{E_c}$', r'$\mathregular{E_{fn}}$',
+                            fig.legend([l1, l2, l3],
+                                       [r'$\mathregular{V}$', r'$\mathregular{E_{fn}}$',
                                         r'$\mathregular{E_{fp}}$'])
+                            plt.show()
+                            fig = plt.figure()
+                            X0 = system.xpts
+                            ax = fig.add_subplot(111)
+                            vx, vefn, vefp = dx[2::3], dx[0::3], dx[1::3]
+                            #l1, = ax.plot(X0 * 1e7, -system.bl - system.Eg - vx, lw=2, color='k', ls='-')
+                            # l2, = ax.plot(X0 * 1e7, -system.bl - vx, lw=2, color='k', ls='-')
+                            l1, = ax.plot(X0 * 1e7, vx, lw=2, color='k', ls='-')
+                            l2, = ax.plot(X0 * 1e7, vefn, lw=2, color='#cf392e', ls='-')
+                            l3, = ax.plot(X0 * 1e7, vefp, lw=2, color='#2e89cf', ls='-')
+                            plt.title("error")
+                            fig.legend([l1, l2, l3],
+                                       [r'$\mathregular{V}$', r'$\mathregular{E_{fn}}$',
+                                        r'$\mathregular{E_{fp}}$'])
+                            plt.show()
+
+                            fig = plt.figure()
+                            X0 = system.xpts
+                            ax = fig.add_subplot(111)
+                            vx, vefn, vefp = x[2::3], x[0::3], x[1::3]
+                            vt = system.scaling.energy
+                            l1, = ax.plot(X0, vt*vefn, lw=2, color='#2e89cf', ls='--')
+                            l2, = ax.plot(X0, vt*vefp, lw=2, color='#cf392e', ls='--')
+                            l3, = ax.plot(X0, -vt * (vx + system.bl), lw=2, color='k', ls='-')
+                            l4, = ax.plot(X0, -vt * (vx + system.bl + system.Eg), lw=2, color='k', ls='-')
+                            l4, = ax.plot(X0, -vt * (vx-vx[0]), lw=2, color='g', ls='--')
+                            plt.title("stuck equilibrium")
                             plt.show()
                             break
                         if np.isnan(error) or error > 1e30:
@@ -325,13 +354,15 @@ class Solver():
                             fig = plt.figure()
                             X0 = system.xpts
                             ax = fig.add_subplot(111)
-                            vx, vefn, vefp = dx[2::3], dx[0::3], dx[1::3]
-                            l1, = ax.plot(X0 * 1e7, -system.bl-system.Eg-vx, lw=2, color='k', ls='-')
-                            l2, = ax.plot(X0 * 1e7, -system.bl-vx, lw=2, color='k', ls='-')
-                            l3, = ax.plot(X0 * 1e7, vefn, lw=2, color='#cf392e', ls='-')
-                            l4, = ax.plot(X0 * 1e7, vefp, lw=2, color='#2e89cf', ls='-')
+                            vx, vefn, vefp = f[2::3], f[0::3], f[1::3]
+
+                            l1, = ax.plot(X0 * 1e7, vx, lw=2, color='k', ls='-')
+                            l2, = ax.plot(X0 * 1e7, vefn, lw=2, color='#cf392e', ls='-')
+                            l3, = ax.plot(X0 * 1e7, vefp, lw=2, color='#2e89cf', ls='-')
                             plt.title("error")
-                            fig.legend([l1, l2, l3,l4], [r'$\mathregular{E_v}$',r'$\mathregular{E_c}$', r'$\mathregular{E_{fn}}$',r'$\mathregular{E_{fp}}$'])
+                            fig.legend([l1, l2, l3],
+                                       [r'$\mathregular{V}$', r'$\mathregular{E_{fn}}$',
+                                        r'$\mathregular{E_{fp}}$'])
                             plt.show()
                             raise NewtonError
                             break
@@ -434,7 +465,6 @@ class Solver():
                                 verbose=verbose, htp=htp)
         else:
             result = guess
-
         # sites of the right contact
         nx = system.nx
 
@@ -462,22 +492,33 @@ class Solver():
         Vapp = [i / system.scaling.energy for i in voltages]
         # Array of the steady state current
         J = np.zeros((len(Vapp),))
+        L = np.zeros((len(Vapp),))
         J[:] = np.nan
+        L[:] = np.nan
+        r1 = result.copy()
+
         #v0=Vapp[0]
         #self.equilibrium=np.linspace(-system.contacts_WF[0] / system.scaling.energy, -system.contacts_WF[1] / system.scaling.energy+v0*q, system.nx)
-
+        vapp0=0
+        #nq1
         for idx, vapp in enumerate(Vapp):
 
             if verbose:
                 logging.info("Applied voltage: {0} V".format(voltages[idx]))
 
             # Apply the voltage on the right contact
-            result['v'][rc] = self.equilibrium[rc] + q*vapp
+            if(voltages[idx]>1.8):
+                result['v']=result['v']+drv
+                result['efn']=result['efn']+drfn
+                result['efp']=result['efp']+drfp
+            result['v'][rc] = self.equilibrium[rc] + q * vapp
 
             # Call the Drift Diffusion Poisson solver
             result = self.solve(system, guess=result, tol=tol, periodic_bcs=periodic_bcs,\
                                 maxiter=maxiter, verbose=verbose, htp=htp)
-
+            drv=result['v']-r1['v']
+            drfn=result['efn']-r1['efn']
+            drfp=result['efp']-r1['efp']
             if result is not None:
                 # 1. Save efn, efp, v
                 name = file_name + "_{0}".format(idx)
@@ -492,7 +533,8 @@ class Solver():
                 try:
                     az = Analyzer(system, result)
                     J[idx] = az.full_current()
-
+                    L[idx] = az.full_emission()
+                    r1 = result.copy()
                     logging.info("For {0} V, J = {1}.".format(voltages[idx], system.scaling.current*J[idx]))
                 except Exception:
                    logging.info("Could not compute the current for the applied voltage"\
@@ -501,9 +543,9 @@ class Solver():
             else:
                 logging.info("The solver failed to converge for the applied voltage"\
                       + " {0} V (index {1}).".format(voltages[idx], idx))
-                return J
+                return J,L
                 break
-        return J
+        return J,L
 
 
 default = Solver()
