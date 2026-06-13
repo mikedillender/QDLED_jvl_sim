@@ -21,39 +21,39 @@ print("t_total = ",t_total,"|  rqd = ",r_qd, "| taqd = ",t_aqd, "| tbqd = ", t_b
 dd = 4e-7   # 2*dd is the distance over which mesh is refined
 dd2 = 1.5e-7
 # Define the mesh
-x = np.concatenate((np.linspace(0, dd, 300, endpoint=False),                        # L contact interface
-                    np.linspace(dd, t_hil-dd2, 100, endpoint=False),                    # material 1
-                    np.linspace(t_hil - dd2, t_hil + dd2, 300, endpoint=False),             # interface 1
-                    np.linspace(t_hil + dd2, (t_bqd) - dd, 200, endpoint=False),       # material 2
-                    np.linspace((t_bqd) - dd, (t_bqd), 200, endpoint=False),      # htl-qd interface
+x = np.concatenate((np.linspace(0, dd, 30, endpoint=False),                        # L contact interface
+                    np.linspace(dd, t_hil-dd2, 20, endpoint=False),                    # material 1
+                    np.linspace(t_hil - dd2, t_hil + dd2, 20, endpoint=False),             # interface 1
+                    np.linspace(t_hil + dd2, (t_bqd) - dd, 40, endpoint=False),       # material 2
+                    np.linspace((t_bqd) - dd, (t_bqd), 20, endpoint=False),      # htl-qd interface
                     [(t_bqd)+r_qd, (t_aqd)-r_qd],      # QD
-                    np.linspace((t_aqd), (t_aqd) + dd, 200, endpoint=False),      # qd-etl interface
-                    np.linspace((t_aqd) + dd, (t_total) - dd, 200, endpoint=False),       # material 2
-                    np.linspace((t_total) - dd, (t_total), 300)))                       # R contact interface
+                    np.linspace((t_aqd), (t_aqd) + dd, 20, endpoint=False),      # qd-etl interface
+                    np.linspace((t_aqd) + dd, (t_total) - dd, 40, endpoint=False),       # material 2
+                    np.linspace((t_total) - dd, (t_total), 30)))                       # R contact interface
 # Build system
 sys = sesame.Builder(x)
-qd_mnc, qd_mpc=.13,.45
-#qd_mnc, qd_mpc=.4,.4
-qd_mns, qd_mps=.19,.6
-#qd_mns, qd_mps=.4,.4
+# Define effective masses
+#qd_mnc, qd_mpc=.2,.45
+#qd_mns, qd_mps=.19,.6
+qd_mnc, qd_mpc=.2,.4
+qd_mns, qd_mps=.2,.4
 # CdS material dictionary
 #hil = {'Nc': 2.5e19, 'Nv':2.5e19, 'Eg':1.57, 'epsilon':3, 'Et': 0,
 #        'mu_e':0.000322, 'mu_h':0.000322, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
 #        'affinity': 3.6}
-hil = {'Nc': 2.5e19, 'Nv':2.5e19, 'Eg':1.9, 'epsilon':7, 'Et': 0,
+hil = {'Nc': 2.5e19, 'Nv':2.5e19, 'Eg':1.57, 'epsilon':4, 'Et': 0,
         'mu_e':0.000322, 'mu_h':0.000322, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
-        'affinity': 3.2}
-htl = {'Nc': 2.5e19, 'Nv':2.5e19, 'Eg':2.9, 'epsilon':4, 'Et': 0,
-        'mu_e':0.00002, 'mu_h':0.00002, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
-        'affinity': 2.4}
-
-qdc = {'Nc': 2.5e19*pow(qd_mnc,1.5), 'Nv':2.5e19*pow(qd_mpc,1.5), 'Eg':2.54, 'epsilon':9.4, 'Et': 0,
-        'mu_e':0.000001, 'mu_h':0.000001, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
-        'affinity': 3.03,'Cn':pow(10,-32),'Cp':pow(10,-32),'B':pow(10,-14)}
-# CdTe material dictionary'''''' ''''''
-etl = {'Nc': 2.5e19*pow(.24,1.5), 'Nv': 2.5e19*pow(.59,1.5), 'Eg':3.4, 'epsilon':8, 'Et': 0,
+        'affinity': 3.6}
+htl = {'Nc': 2.5e19, 'Nv':2.5e19, 'Eg':3, 'epsilon':4, 'Et': 0,
         'mu_e':0.002, 'mu_h':0.002, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
-        'affinity': 3.8}
+        'affinity': 2.6}
+qdc = {'Nc': 2.5e19*pow(qd_mnc,1.5), 'Nv':2.5e19*pow(qd_mpc,1.5), 'Eg':2.28, 'epsilon':7, 'Et': 0,
+        'mu_e':0.000001, 'mu_h':0.000001, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
+        'affinity': 3.66,'Cn':pow(10,-31),'Cp':pow(10,-31),'B':.58*pow(10,-12)}
+# CdTe material dictionary'''''' ''''''
+etl = {'Nc': 2.5e19*pow(.24,1.5), 'Nv': 2.5e19*pow(.59,1.5), 'Eg':3.4, 'epsilon':7, 'Et': 0,
+        'mu_e':0.002, 'mu_h':0.002, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
+        'affinity': 4}
 '''
 etl = {'Nc': 2.5e19, 'Nv': 2.5e19, 'Eg':3.4, 'epsilon':5, 'Et': 0,
         'mu_e':0.002, 'mu_h':0.002, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
@@ -70,17 +70,22 @@ sys.add_material(etl, etl_region)     # adding CdS
 sys.add_material(htl, htl_region)     # adding CdTe
 sys.add_material(hil, hil_region)     # adding CdTe
 sys.add_material(qdc, qd_region)     # adding CdTe
-sys.add_qd(1.0,qd_mns=qd_mns,qd_mps=qd_mps,location=qd_region)
-# Add the donors
-#sys.add_donor(1e17, etl_region)
-# Add the acceptors
-#sys.add_acceptor(1e12, htl_region)
-sys.add_acceptor(5e18, hil_region)
+dEc=etl['affinity']-qdc['affinity']
+dEv=qdc['affinity']+qdc['Eg']-(htl['affinity']+htl['Eg'])
+sys.add_qd(1.0,qd_mns=qd_mns,qd_mps=qd_mps,dEc=dEc,dEv=dEv,location=qd_region)
+
+
+print(dEc,dEv)
+print("delta: ",dEc-dEv)
+# Add the donor densities
+sys.add_donor(1e17, etl_region)
+sys.add_acceptor(1e17, htl_region)
+sys.add_acceptor(2e19, hil_region)
 
 # Define contacts: CdS contact is Ohmic, CdTe contact is Schottky
-Lcontact_type, Rcontact_type = 'Ohmic', 'Schottky'
+Lcontact_type, Rcontact_type = 'Schottky', 'Schottky'
 #Lcontact_type, Rcontact_type = 'Ohmic', 'Ohmic'
-Lcontact_workFcn, Rcontact_workFcn = 5.1, 4.06   # Lcontact work function irrelevant because L contact is Ohmic
+Lcontact_workFcn, Rcontact_workFcn = 4.8, 4.06   # Lcontact work function irrelevant because L contact is Ohmic
 # Add the contacts
 sys.contact_type(Lcontact_type, Rcontact_type, Lcontact_workFcn, Rcontact_workFcn)
 
@@ -93,11 +98,16 @@ sys.contact_S(Sn_left, Sp_left, Sn_right, Sp_right)
 
 
 # Specify the applied voltage values
-voltages = np.linspace(0,10,200)
+
+'''voltages = np.concatenate((np.linspace(0, 1.5, 80, endpoint=False),                        # L contact interface
+                    np.linspace(1.5,2.5, 100, endpoint=False),                    # material 1
+                    np.linspace(2.5, 6, 100,endpoint=False)))
+                    '''
+voltages=np.linspace(0,5,300)
 # Perform I-V calculation
-export_folder="ohm51"
+export_folder="qd_small"
 os.makedirs(export_folder, exist_ok=True)
-j = sesame.IVcurve(sys, voltages, export_folder+"/1dQD_V",htp=1,maxiter=1000)
+j,l = sesame.IVcurve(sys, voltages, export_folder+"/1dQD_V",tol=1e-5,htp=1,maxiter=600)
 j = j * sys.scaling.current
 
 result = {'v':voltages, 'j':j}
@@ -110,10 +120,27 @@ try:
     fig, ax = plt.subplots()   # creates a new figure and axes
 
     ax.plot(voltages, j, '-o')
+    plt.ylim(1e-10,1)
     ax.set_xlabel('Voltage [V]')
     ax.set_ylabel('Current [A/cm^2]')
     ax.set_yscale('log')
     ax.grid(True)
+
+    #plt.show()
+
+    fig, ax = plt.subplots()   # creates a new figure and axes
+
+    ax.plot(voltages, l, '-o')
+    ax.set_xlabel('Voltage [V]')
+    ax.set_ylabel('EQE')
+    #ax.set_yscale('log')
+    ax.grid(True)
+    '''fig, ax = plt.subplots()   # creates a new figure and axes
+    ax.plot(voltages, j/l, '-o')
+    ax.set_xlabel('Voltage [V]')
+    ax.set_ylabel('EQE')
+    ax.set_yscale('log')
+    ax.grid(True)'''
 
     plt.show()
 
