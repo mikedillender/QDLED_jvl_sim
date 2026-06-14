@@ -54,16 +54,16 @@ def build_system(m_qd=2):
     qd_mns, qd_mps = 0.19, 0.60
 
     htl = {
-        'Nc': 2.5e19, 'Nv': 2.5e19, 'Eg': 2.7, 'epsilon': 5, 'Et': 0,
+        'Nc': 2.5e19, 'Nv': 2.5e19, 'Eg': 3, 'epsilon': 5, 'Et': 0,
         'mu_e': 0.002, 'mu_h': 0.002, 'tau_e': 1.2e-6, 'tau_h': 1.2e-6,
-        'affinity': 2.6,
+        'affinity': 2.4,
     }
     qdc = {
         'Nc': 2.5e19 * pow(qd_mnc, 1.5),
         'Nv': 2.5e19 * pow(qd_mpc, 1.5),
         'Eg': 2.28, 'epsilon': 8, 'Et': 0,
         'mu_e': 1e-6, 'mu_h': 1e-6, 'tau_e': 1.2e-6, 'tau_h': 1.2e-6,
-        'affinity': 3.7, 'Cn': 1e-31, 'Cp': 1e-31, 'B': 0.5e-12,
+        'affinity': 3.66, 'Cn': 1.5e-31, 'Cp': 1.5e-31, 'B': 0.5e-12,
     }
     etl = {
         'Nc': 2.5e19 * pow(0.24, 1.5),
@@ -99,7 +99,7 @@ def build_system(m_qd=2):
     sys.add_acceptor(1e17, htl_region)
 
     # Treat PEDOT:PSS as the effective anode contact.
-    sys.contact_type('Schottky', 'Schottky', 5.1, 4.15)
+    sys.contact_type('Schottky', 'Schottky', 5.15, 4.15)
 
     Scontact = 1.16e4  # cm/s
     sys.contact_S(Scontact, Scontact, Scontact, Scontact)
@@ -115,7 +115,7 @@ def run_iv(m_qd=2, voltages=None, export_root="paperlike_variable_m", maxiter=15
     export_folder = os.path.join(export_root, f"m{m_qd}")
     os.makedirs(export_folder, exist_ok=True)
 
-    j, l = sesame.IVcurve(
+    j, l, jem = sesame.IVcurve(
         sys,
         voltages,
         os.path.join(export_folder, "1dQD_V"),
@@ -123,8 +123,9 @@ def run_iv(m_qd=2, voltages=None, export_root="paperlike_variable_m", maxiter=15
         maxiter=maxiter,
     )
     j = j * sys.scaling.current
+    jem = jem * sys.scaling.current
 
-    result = {'v': voltages, 'j': j, 'l': l, 'm_qd': m_qd}
+    result = {'v': voltages, 'j': j, 'jem': jem, 'eqe': l, 'm_qd': m_qd}
     np.save(os.path.join(export_folder, "qd_iv"), result)
     return sys, result
 
@@ -137,15 +138,25 @@ if __name__ == "__main__":
         import matplotlib.pyplot as plt
 
         fig, ax = plt.subplots()
-        ax.plot(result['v'], result['j'], '-o')
-        ax.set_ylim(1e-10, 1)
+        line1, = ax.plot(result['v'], result['j'], '-o', label='Total current')
+        ax.set_ylim(1e-12, 1)
         ax.set_xlabel('Voltage [V]')
-        ax.set_ylabel('Current [A/cm$^2$]')
+        ax.set_ylabel('Total current [A/cm$^2$]')
         ax.set_yscale('log')
         ax.grid(True)
 
+        ax2 = ax.twinx()
+        line2, = ax2.plot(result['v'], result['jem'], '-s', label='Emissive current')
+        ax2.set_ylabel('Emissive current [A/cm$^2$]')
+        ax2.set_yscale('log')
+        finite_jem = result['jem'][np.isfinite(result['jem']) & (result['jem'] > 0)]
+        if len(finite_jem) > 0:
+            ax2.set_ylim(max(np.nanmin(finite_jem) / 3, 1e-16), max(np.nanmax(finite_jem) * 3, 1e-12))
+        ax.legend([line1, line2], ['Total current', 'Emissive current'], loc='best')
+        fig.tight_layout()
+
         fig, ax = plt.subplots()
-        ax.plot(result['v'], result['l'], '-o')
+        ax.plot(result['v'], result['eqe'], '-o')
         ax.set_xlabel('Voltage [V]')
         ax.set_ylabel('EQE')
         ax.grid(True)

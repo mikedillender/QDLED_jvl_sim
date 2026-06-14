@@ -805,49 +805,280 @@ class Analyzer():
 
         return j
 
-    def full_emission(self):
+    def _emission_sites(self, sites=None):
+        """Return the sites used for LED emission accounting.
 
-        sites=self.sys.eml_sites
+        For QD-LED simulations, emission should only be counted from the
+        discrete QD sites.  Falling back to ``eml_sites`` preserves the old
+        behavior for non-QD simulations.
+        """
+        if sites is not None:
+            return np.asarray(sites, dtype=int)
+        if getattr(self.sys, 'has_qd', False) and hasattr(self.sys, 'qd_sites'):
+            return np.asarray(self.sys.qd_sites, dtype=int)
+        return np.asarray(self.sys.eml_sites, dtype=int)
+
+    def _site_widths(self, sites):
+        """Continuity-equation control-volume widths for site-local rates.
+
+        For the continuity equations Sesame discretizes a local rate term R_i as
+
+            (J_i - J_{i-1}) / dxbar_i - R_i
+
+        where dxbar_i = (dx_{i-1} + dx_i)/2 for an interior site.  Therefore,
+        to convert a site-local recombination rate into a current-equivalent
+        flux that is consistent with f_n/f_p, the rate must be multiplied by
+        this continuity control-volume width.
+
+        This deliberately does *not* use ``poisson_charge_width``.  The Poisson
+        charge volume was introduced only to integrate charge density in f_v;
+        it is not the volume used by the carrier-continuity equations.
+        """
+        sites = np.asarray(sites, dtype=int)
+        widths = np.empty(len(sites), dtype=float)
+        nx = self.sys.nx
+
+        for k, i in enumerate(sites):
+            if i <= 0:
+                widths[k] = 0.5 * self.sys.dx[0]
+            elif i >= nx - 1:
+                widths[k] = 0.5 * self.sys.dx[-1]
+            else:
+                widths[k] = 0.5 * (self.sys.dx[i - 1] + self.sys.dx[i])
+        return widths
+
+    def _qd_boundary_currents(self):
+        """Return QD-region boundary currents from the link-current arrays.
+
+        These are diagnostics only.  The EQE/emissive-current calculation below
+        uses the recombination term from the continuity equation, not these
+        boundary-current differences.  In a well-converged steady-state run,
+        both approaches should agree closely.
+        """
+        nan_out = {
+            'jp_left_qd': np.nan,
+            'jp_right_qd': np.nan,
+            'jn_left_qd': np.nan,
+            'jn_right_qd': np.nan,
+            'jrec_holes_raw': np.nan,
+            'jrec_electrons_raw': np.nan,
+            'jrec_qd_raw': np.nan,
+            'jrec_qd_flux': np.nan,
+        }
+        if not (getattr(self.sys, 'has_qd', False) and hasattr(self.sys, 'qd_sites')):
+            return nan_out
+
+        nx = self.sys.nx
+        if nx < 2:
+            return nan_out
+
+        sites_i = np.arange(nx - 1, dtype=int)
+        sites_ip1 = sites_i + 1
+        dl = self.sys.dx
+
+        jp = get_jp(self.sys, self.efp, self.v, sites_i, sites_ip1, dl)
+        jn = get_jn(self.sys, self.efn, self.v, sites_i, sites_ip1, dl)
+
+        qd_sites = np.asarray(self.sys.qd_sites, dtype=int)
+        left_link = int(qd_sites[0] - 1)  # HTL site -> first QD site
+        right_link = int(qd_sites[-1])  # last QD site -> ETL site
+
+        if not (0 <= left_link < len(jp) and 0 <= right_link < len(jp)):
+            return nan_out
+
+        jp_left = float(jp[left_link])
+        jp_right = float(jp[right_link])
+        jn_left = float(jn[left_link])
+        jn_right = float(jn[right_link])
+
+        jrec_h = jp_left - jp_right
+        jrec_n = jn_right - jn_left
+
+        if np.isfinite(jrec_h) and np.isfinite(jrec_n):
+            jrec_raw = 0.5 * (jrec_h + jrec_n)
+        elif np.isfinite(jrec_h):
+            jrec_raw = jrec_h
+        elif np.isfinite(jrec_n):
+            jrec_raw = jrec_n
+        else:
+            jrec_raw = np.nan
+
+        jrec_flux = max(float(jrec_raw), 0.0) if np.isfinite(jrec_raw) else np.nan
+
+        return {
+            'jp_left_qd': jp_left,
+            'jp_right_qd': jp_right,
+            'jn_left_qd': jn_left,
+            'jn_right_qd': jn_right,
+            'jrec_holes_raw': float(jrec_h),
+            'jrec_electrons_raw': float(jrec_n),
+            'jrec_qd_raw': float(jrec_raw) if np.isfinite(jrec_raw) else np.nan,
+            'jrec_qd_flux': jrec_flux,
+        }
+
+    def _qd_injection_fluxes(self):
+        """Backward-compatible wrapper for injection diagnostics."""
+        c = self._qd_boundary_currents()
+        jp_inj = c['jp_left_qd']
+        jn_inj = c['jn_right_qd']
+        if np.isfinite(jp_inj) and np.isfinite(jn_inj):
+            bipolar_inj = min(abs(jp_inj), abs(jn_inj))
+        else:
+            bipolar_inj = np.nan
+        return jp_inj, jn_inj, bipolar_inj
+
+    def emission_components(self, eta_out=None, J_floor=None, sites=None,
+                            clip_negative=True):
+        """Return EQE/emissive-current quantities from the continuity rates.
+
+        This implements the definition you described:
+
+            J_rec,QD = integral_QD[(R_rad + R_SRH + R_Auger) dxbar]
+            eta_rad  = integral_QD[R_rad dxbar] / J_rec,QD
+            J_em     = eta_rad * J_rec,QD
+
+        which is exactly equivalent to ``J_em = integral_QD[R_rad dxbar]``, but
+        it makes the physical interpretation explicit.  The important detail is
+        that ``dxbar`` is the control-volume width from the *continuity*
+        equation f_n/f_p, not the Poisson charge-control volume.
+
+        Currents/fluxes returned here are in Sesame's dimensionless internal
+        current units unless the key name contains ``physical_Acm2``.  Multiply
+        by ``sys.scaling.current`` to convert to A/cm^2.
+        """
+        if eta_out is None:
+            eta_out = getattr(self.sys, 'eqe_outcoupling', .25)
+        if J_floor is None:
+            J_floor = getattr(self.sys, 'eqe_current_floor', 1e-10)
+
+        sites = self._emission_sites(sites)
+
         n = get_n(self.sys, self.efn, self.v, sites)
         p = get_p(self.sys, self.efp, self.v, sites)
-        ni2 = self.sys.ni[sites]**2
-        r = self.sys.B[sites] * (n*p - ni2)
+        ni2 = self.sys.ni[sites] ** 2
+        np_minus_ni2 = n * p - ni2
 
-        n = get_n(self.sys, self.efn, self.v, sites)
-        p = get_p(self.sys, self.efp, self.v, sites)
-        ni2 = self.sys.ni[sites]**2
-        r_aug = self.sys.Cn[sites] * n * (n*p - ni2) + self.sys.Cp[sites] * p * (n*p - ni2)
+        r_rad = self.sys.B[sites] * np_minus_ni2
+        r_aug = (self.sys.Cn[sites] * n + self.sys.Cp[sites] * p) * np_minus_ni2
+        r_srh = np_minus_ni2 / (
+                self.sys.tau_h[sites] * (n + self.sys.n1[sites])
+                + self.sys.tau_e[sites] * (p + self.sys.p1[sites])
+        )
 
-        n1 = self.sys.n1[sites]
-        p1 = self.sys.p1[sites]
-        tau_h = self.sys.tau_h[sites]
-        tau_e = self.sys.tau_e[sites]
-        r_srh = (n*p - ni2)/(tau_h * (n+n1) + tau_e*(p+p1))
-        print(r)
-        print(r_aug)
-        print(r_srh)
-        eq=sum(r)/sum(r+r_aug+r_srh)
-        print(eq)
-        return eq
+        if clip_negative:
+            r_rad_i = np.maximum(r_rad, 0.0)
+            r_aug_i = np.maximum(r_aug, 0.0)
+            r_srh_i = np.maximum(r_srh, 0.0)
+        else:
+            r_rad_i, r_aug_i, r_srh_i = r_rad, r_aug, r_srh
+
+        widths = self._site_widths(sites)
+
+        # Current-equivalent recombination fluxes from the same source terms
+        # that appear in the continuity equations.
+        rad_flux = float(np.sum(r_rad_i * widths))
+        auger_flux = float(np.sum(r_aug_i * widths))
+        srh_flux = float(np.sum(r_srh_i * widths))
+        qd_recomb_current_flux = rad_flux + auger_flux + srh_flux
+
+        if qd_recomb_current_flux > 0 and np.isfinite(qd_recomb_current_flux):
+            radiative_branching_ratio = rad_flux / qd_recomb_current_flux
+        else:
+            radiative_branching_ratio = 0.0
+
+        # This is written in the requested form, although algebraically it is
+        # just rad_flux when the same widths are used above.
+        emissive_current_flux = radiative_branching_ratio * qd_recomb_current_flux
+
+        terminal_current = float(self.full_current())  # dimensionless, signed
+        current_flux = abs(terminal_current)
+        current_physical = current_flux * self.sys.scaling.current
+        emissive_current_physical = emissive_current_flux * self.sys.scaling.current
+
+        if (not np.isfinite(current_flux)) or current_physical < J_floor or current_flux <= 0:
+            iqe_current = 0.0
+            eqe = 0.0
+        else:
+            iqe_current = emissive_current_flux / current_flux
+            eqe = eta_out * iqe_current
+
+        recomb_fraction_of_current = (
+            qd_recomb_current_flux / current_flux if current_flux > 0 else 0.0
+        )
+        leakage_flux = current_flux - qd_recomb_current_flux
+
+        qd_currents = self._qd_boundary_currents()
+        jp_inj, jn_inj, bipolar_injection_flux = self._qd_injection_fluxes()
+
+        out = {
+            'eqe': eqe,
+            'iqe_current': iqe_current,
+            'eta_out': eta_out,
+            'radiative_branching_ratio': radiative_branching_ratio,
+            'recomb_fraction_of_current': recomb_fraction_of_current,
+            'current_physical_Acm2': current_physical,
+            'current_flux': current_flux,
+            'total_current': terminal_current,
+            'emissive_current_flux': emissive_current_flux,
+            'emissive_current_physical_Acm2': emissive_current_physical,
+            'qd_recomb_current_flux': qd_recomb_current_flux,
+            'qd_recomb_current_physical_Acm2': qd_recomb_current_flux * self.sys.scaling.current,
+            'raw_radiative_current_flux': rad_flux,
+            'raw_radiative_current_physical_Acm2': rad_flux * self.sys.scaling.current,
+            'rad_flux': rad_flux,
+            'auger_flux': auger_flux,
+            'srh_flux': srh_flux,
+            'total_recomb_flux': qd_recomb_current_flux,
+            'leakage_flux': leakage_flux,
+            'jp_qd_injection': jp_inj,
+            'jn_qd_injection': jn_inj,
+            'bipolar_injection_flux': bipolar_injection_flux,
+            'r_rad': r_rad,
+            'r_aug': r_aug,
+            'r_srh': r_srh,
+            'sites': sites,
+            'widths': widths,
+        }
+        out.update(qd_currents)
+        return out
+
+    def full_emissive_current(self, physical=False):
+        """Return the QD radiative recombination current-equivalent.
+
+        Parameters
+        ----------
+        physical : bool
+            If False, return the dimensionless current-equivalent used internally
+            by Sesame. If True, return A/cm^2 by multiplying by
+            ``sys.scaling.current``.
+        """
+        c = self.emission_components(J_floor=0.0)
+        if physical:
+            return c['emissive_current_physical_Acm2']
+        return c['emissive_current_flux']
+
+    def full_emission(self, eta_out=None, J_floor=None):
+        """Return the EQE proxy used by IVcurve.
+
+        This is QD-radiative-recombination current divided by total terminal
+        current, with both quantities in Sesame's dimensionless
+        current-equivalent units. No explicit factor of q is needed.
+        """
+        return self.emission_components(eta_out=eta_out, J_floor=J_floor)['eqe']
 
     def print_emission(self):
-
-        sites=self.sys.eml_sites
-        n = get_n(self.sys, self.efn, self.v, sites)
-        p = get_p(self.sys, self.efp, self.v, sites)
-        ni2 = self.sys.ni[sites]**2
-        r = self.sys.B[sites] * (n*p - ni2)
-        print("Radiative:",r)
-        r_aug = self.sys.Cn[sites] * n * (n*p - ni2) + self.sys.Cp[sites] * p * (n*p - ni2)
-        print("Auger:",r_aug)
-
-        ni2 = self.sys.ni[sites]**2
-        n1 = self.sys.n1[sites]
-        p1 = self.sys.p1[sites]
-        tau_h = self.sys.tau_h[sites]
-        tau_e = self.sys.tau_e[sites]
-        n = get_n(self.sys, self.efn, self.v, sites)
-        p = get_p(self.sys, self.efp, self.v, sites)
-        r_srh = (n*p - ni2)/(tau_h * (n+n1) + tau_e*(p+p1))
-        print("SRH:",r_srh)
-        return sum(r)
+        c = self.emission_components()
+        print("EQE proxy:", c['eqe'])
+        print("IQE/current proxy:", c['iqe_current'])
+        print("Radiative branching ratio:", c['radiative_branching_ratio'])
+        print("Current [A/cm^2]:", c['current_physical_Acm2'])
+        print("Emissive current [A/cm^2]:", c['emissive_current_physical_Acm2'])
+        print("Raw QD radiative flux:", c['rad_flux'])
+        print("Auger flux:", c['auger_flux'])
+        print("SRH flux:", c['srh_flux'])
+        print("Total recombination flux:", c['total_recomb_flux'])
+        print("Leakage flux:", c['leakage_flux'])
+        print("HTL->QD hole injection:", c['jp_qd_injection'])
+        print("ETL->QD electron injection:", c['jn_qd_injection'])
+        print("Bipolar injection flux:", c['bipolar_injection_flux'])
+        return c['eqe']

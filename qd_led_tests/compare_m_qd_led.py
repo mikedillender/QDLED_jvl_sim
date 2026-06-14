@@ -3,7 +3,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-from symmetric import run_iv
+from qd_led import run_iv
 
 
 def first_crossing(v, y, threshold):
@@ -31,10 +31,10 @@ def plot_current_and_emission(results, export_root):
     lines = []
     labels = []
     for m_qd, result in results.items():
-        line, = ax.plot(result['v'], result['j'], '-', markersize=3, label=f"J, m = {m_qd}")
+        line, = ax.plot(result['v'], result['j'], '-o', markersize=3, label=f"J, m = {m_qd}")
         lines.append(line)
         labels.append(f"J, m = {m_qd}")
-        line2, = ax.plot(result['v'], result['jem'], '--', markersize=3, label=f"Jem, m = {m_qd}")
+        line2, = ax.plot(result['v'], result['jem'], '--s', markersize=3, label=f"Jem, m = {m_qd}")
         lines.append(line2)
         labels.append(f"Jem, m = {m_qd}")
 
@@ -46,9 +46,12 @@ def plot_current_and_emission(results, export_root):
 
     #ax2.set_ylabel('Emissive current [A/cm$^2$]')
     #ax2.set_yscale('log')
-    all_jem = np.concatenate([r['jem'][np.isfinite(r['jem']) & (r['jem'] > 0)] for r in results.values()])
-    #if len(all_jem) > 0:
-    #    ax2.set_ylim(max(np.nanmin(all_jem) / 3, 1e-16), max(np.nanmax(all_jem) * 3, 1e-12))
+
+    # Use the same current scale on both y-axes.  Independent log axes are
+    # visually misleading here because total current and emissive current
+    # have the same units.  With matched limits, Jem will appear below J
+    # whenever EQE = Jem/J < 1.
+    #ax2.set_ylim(ax.get_ylim())
 
     ax.legend(lines, labels, loc='best', fontsize=8)
     fig.tight_layout()
@@ -69,7 +72,7 @@ def plot_eqe(results, export_root):
 
 def main():
     voltages = np.linspace(0, 6, 120)
-    export_root = 'compare_symmetric_m'
+    export_root = 'compare_qd_led_m'
     os.makedirs(export_root, exist_ok=True)
 
     results = {}

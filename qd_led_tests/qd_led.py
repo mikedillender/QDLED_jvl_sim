@@ -123,7 +123,7 @@ def run_iv(m_qd=2, voltages=None, export_root="qd_small_variable_m", maxiter=100
     export_folder = os.path.join(export_root, f"m{m_qd}")
     os.makedirs(export_folder, exist_ok=True)
 
-    j, l = sesame.IVcurve(
+    j, l, jem = sesame.IVcurve(
         sys,
         voltages,
         os.path.join(export_folder, "1dQD_V"),
@@ -132,8 +132,9 @@ def run_iv(m_qd=2, voltages=None, export_root="qd_small_variable_m", maxiter=100
         maxiter=maxiter,
     )
     j = j * sys.scaling.current
+    jem = jem * sys.scaling.current
 
-    result = {'v': voltages, 'j': j, 'l': l, 'm_qd': m_qd}
+    result = {'v': voltages, 'j': j, 'jem': jem, 'eqe': l, 'l': l, 'm_qd': m_qd}
     np.save(os.path.join(export_folder, "qd_iv"), result)
     return sys, result
 
@@ -146,15 +147,28 @@ if __name__ == "__main__":
         import matplotlib.pyplot as plt
 
         fig, ax = plt.subplots()
-        ax.plot(result['v'], result['j'], '-o')
-        ax.set_ylim(1e-10, 1)
+        line1, = ax.plot(result['v'], result['j'], '-o', label='Total current')
+        ax.set_ylim(1e-12, 1)
         ax.set_xlabel('Voltage [V]')
-        ax.set_ylabel('Current [A/cm$^2$]')
+        ax.set_ylabel('Total current [A/cm$^2$]')
         ax.set_yscale('log')
         ax.grid(True)
 
+        ax2 = ax.twinx()
+        line2, = ax2.plot(result['v'], result['jem'], '-s', label='Emissive current')
+        ax2.set_ylabel('Emissive current [A/cm$^2$]')
+        ax2.set_yscale('log')
+
+        # Use the same current scale on both y-axes.  Since J and Jem have
+        # the same units, independent log axes can make Jem look visually
+        # larger than J even when Jem/J = EQE < 1.
+        ax2.set_ylim(ax.get_ylim())
+
+        ax.legend([line1, line2], ['Total current', 'Emissive current'], loc='best')
+        fig.tight_layout()
+
         fig, ax = plt.subplots()
-        ax.plot(result['v'], result['l'], '-o')
+        ax.plot(result['v'], result['eqe'], '-o')
         ax.set_xlabel('Voltage [V]')
         ax.set_ylabel('EQE')
         ax.grid(True)

@@ -175,7 +175,7 @@ def get_jn(sys, efn, v, sites_i, sites_ip1, dl):
          -1 * mu * exp(efnp1)*(-(efnp0 - efnp1))     / dl / (-exp(-vp0) * (1 + .5 * dv0 + 1 / 6. * (dv0) ** 2)) * (np.abs(dv0) < tol2)) * (np.abs(defn) < tol3)
 
     if (sys.has_qd and len(sites_i) > 1):
-        jn[qd_links] /= 1e8
+        jn[qd_links] /= 1e10
         for k in range(len(qd_sites_l) - 1):
             jn[qd_sites_l[k]] += vd * (n_qd[k + 1] - n_qd[k])
         jn[qd_sites_l[-1]] += jni_qd
@@ -252,7 +252,7 @@ def get_jp(sys, efp, v, sites_i, sites_ip1, dl):
           mu * exp(efpp1) * ( -(efpp0 - efpp1))    / dl * 1 / (-exp(vp0) * (1 - .5 * (dv0) + 1 / 6. * (dv0) ** 2.)) * (np.abs(dv0) < tol2)) * (np.abs(defp) < tol3)
 
     if (sys.has_qd and len(sites_i) > 1):
-        jp[qd_links] /= 1e8
+        jp[qd_links] /= 1e10
         for k in range(len(qd_sites_l) - 1):
             jp[qd_sites_l[k]] += vd * (p_qd[k + 1] - p_qd[k])
         jp[qd_sites_l[0] - 1] *= mu[qd_sites_l[0]] / mu[qd_sites_l[0] - 1]
@@ -327,10 +327,10 @@ def get_jn_derivs(sys, efn, v, sites_i, sites_ip1, dl):
     defn_i, defn_ip1, dv_i, dv_ip1=mu * defn_i, mu * defn_ip1, mu * dv_i, mu * dv_ip1
 
     if (sys.has_qd and len(sites_i) > 1):
-        dv_i[qd_links] /= 1e8
-        dv_ip1[qd_links] /= 1e8
-        defn_i[qd_links] /= 1e8
-        defn_ip1[qd_links] /= 1e8
+        dv_i[qd_links] /= 1e10
+        dv_ip1[qd_links] /= 1e10
+        defn_i[qd_links] /= 1e10
+        defn_ip1[qd_links] /= 1e10
 
         # QD-to-QD electron hopping links.
         for k in range(len(qd_sites_l) - 1):
@@ -415,10 +415,10 @@ def get_jp_derivs(sys, efp, v, sites_i, sites_ip1, dl):
     defp_i, defp_ip1, dv_i, dv_ip1=mu * defp_i, mu * defp_ip1, mu * dv_i, mu * dv_ip1
     ''''''
     if (sys.has_qd and len(sites_i) > 1):
-        dv_i[qd_links] /= 1e8
-        dv_ip1[qd_links] /= 1e8
-        defp_i[qd_links] /= 1e8
-        defp_ip1[qd_links] /= 1e8
+        dv_i[qd_links] /= 1e10
+        dv_ip1[qd_links] /= 1e10
+        defp_i[qd_links] /= 1e10
+        defp_ip1[qd_links] /= 1e10
 
         htl_link = qd_sites_l[0] - 1
         dv_i[htl_link] *= mu[qd_sites_l[0]] / mu[htl_link]

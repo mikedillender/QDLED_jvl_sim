@@ -490,11 +490,15 @@ class Solver():
 
         # Applied potentials made dimensionless
         Vapp = [i / system.scaling.energy for i in voltages]
-        # Array of the steady state current
+        # Arrays of the steady-state terminal current, EQE proxy, and
+        # emissive current. J and Jem are dimensionless current-equivalents;
+        # multiply both by system.scaling.current to convert to A/cm^2.
         J = np.zeros((len(Vapp),))
         L = np.zeros((len(Vapp),))
+        Jem = np.zeros((len(Vapp),))
         J[:] = np.nan
         L[:] = np.nan
+        Jem[:] = np.nan
         r1 = result.copy()
 
         # v0=Vapp[0]
@@ -516,10 +520,15 @@ class Solver():
             # Call the Drift Diffusion Poisson solver
             result = self.solve(system, guess=result, tol=tol, periodic_bcs=periodic_bcs, \
                                 maxiter=maxiter, verbose=verbose, htp=htp)
+            if result is None:
+                logging.info("The solver failed to converge for the applied voltage"
+                             + " {0} V (index {1}).".format(voltages[idx], idx))
+                return J, L, Jem
+
+            drv = result['v'] - r1['v']
+            drfn = result['efn'] - r1['efn']
+            drfp = result['efp'] - r1['efp']
             if result is not None:
-                drv = result['v'] - r1['v']
-                drfn = result['efn'] - r1['efn']
-                drfp = result['efp'] - r1['efp']
                 # 1. Save efn, efp, v
                 name = file_name + "_{0}".format(idx)
                 # add some system settings to the saved results
@@ -534,8 +543,16 @@ class Solver():
                     az = Analyzer(system, result)
                     J[idx] = az.full_current()
                     L[idx] = az.full_emission()
+                    Jem[idx] = az.full_emissive_current()
                     r1 = result.copy()
-                    logging.info("For {0} V, J = {1}.".format(voltages[idx], system.scaling.current * J[idx]))
+                    logging.info(
+                        "For {0} V, J = {1}, Jem = {2}, EQE = {3}.".format(
+                            voltages[idx],
+                            system.scaling.current * J[idx],
+                            system.scaling.current * Jem[idx],
+                            L[idx],
+                        )
+                    )
                 except Exception:
                     logging.info("Could not compute the current for the applied voltage" \
                                  + " {0} V (index {1}).".format(voltages[idx], idx))
@@ -543,9 +560,9 @@ class Solver():
             else:
                 logging.info("The solver failed to converge for the applied voltage" \
                              + " {0} V (index {1}).".format(voltages[idx], idx))
-                return J, L
+                return J, L, Jem
                 break
-        return J, L
+        return J, L, Jem
 
 
 default = Solver()
