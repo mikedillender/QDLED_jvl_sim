@@ -33,16 +33,16 @@ x = np.concatenate((np.linspace(0, dd, 30, endpoint=False),                     
 # Build system
 sys = sesame.Builder(x)
 # Define effective masses
-#qd_mnc, qd_mpc=.2,.45
-#qd_mns, qd_mps=.19,.6
-qd_mnc, qd_mpc=.2,.4
-qd_mns, qd_mps=.2,.4
+qd_mnc, qd_mpc=.2,.45
+qd_mns, qd_mps=.19,.6
+#qd_mnc, qd_mpc=.2,.4
+#qd_mns, qd_mps=.2,.4
 # CdS material dictionary
 #hil = {'Nc': 2.5e19, 'Nv':2.5e19, 'Eg':1.57, 'epsilon':3, 'Et': 0,
 #        'mu_e':0.000322, 'mu_h':0.000322, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
 #        'affinity': 3.6}
 hil = {'Nc': 2.5e19, 'Nv':2.5e19, 'Eg':1.57, 'epsilon':4, 'Et': 0,
-        'mu_e':0.000322, 'mu_h':0.000322, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
+        'mu_e':0.00322, 'mu_h':0.00322, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
         'affinity': 3.6}
 htl = {'Nc': 2.5e19, 'Nv':2.5e19, 'Eg':3, 'epsilon':4, 'Et': 0,
         'mu_e':0.002, 'mu_h':0.002, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
@@ -83,9 +83,9 @@ sys.add_acceptor(1e17, htl_region)
 sys.add_acceptor(2e19, hil_region)
 
 # Define contacts: CdS contact is Ohmic, CdTe contact is Schottky
-Lcontact_type, Rcontact_type = 'Schottky', 'Schottky'
+Lcontact_type, Rcontact_type = 'Ohmic', 'Schottky'
 #Lcontact_type, Rcontact_type = 'Ohmic', 'Ohmic'
-Lcontact_workFcn, Rcontact_workFcn = 4.8, 4.06   # Lcontact work function irrelevant because L contact is Ohmic
+Lcontact_workFcn, Rcontact_workFcn = 4.7, 4.15   # Lcontact work function irrelevant because L contact is Ohmic
 # Add the contacts
 sys.contact_type(Lcontact_type, Rcontact_type, Lcontact_workFcn, Rcontact_workFcn)
 
@@ -103,7 +103,7 @@ sys.contact_S(Sn_left, Sp_left, Sn_right, Sp_right)
                     np.linspace(1.5,2.5, 100, endpoint=False),                    # material 1
                     np.linspace(2.5, 6, 100,endpoint=False)))
                     '''
-voltages=np.linspace(0,5,300)
+voltages=np.linspace(0,7,300)
 # Perform I-V calculation
 export_folder="qd_small"
 os.makedirs(export_folder, exist_ok=True)

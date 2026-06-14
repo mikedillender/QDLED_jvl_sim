@@ -516,15 +516,10 @@ class Solver():
             # Call the Drift Diffusion Poisson solver
             result = self.solve(system, guess=result, tol=tol, periodic_bcs=periodic_bcs, \
                                 maxiter=maxiter, verbose=verbose, htp=htp)
-            if result is None:
-                logging.info("The solver failed to converge for the applied voltage"
-                             + " {0} V (index {1}).".format(voltages[idx], idx))
-                return J, L
-
-            drv = result['v'] - r1['v']
-            drfn = result['efn'] - r1['efn']
-            drfp = result['efp'] - r1['efp']
             if result is not None:
+                drv = result['v'] - r1['v']
+                drfn = result['efn'] - r1['efn']
+                drfp = result['efp'] - r1['efp']
                 # 1. Save efn, efp, v
                 name = file_name + "_{0}".format(idx)
                 # add some system settings to the saved results

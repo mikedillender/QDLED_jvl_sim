@@ -10,7 +10,7 @@ t_hil = 20*1e-7
 t_htl = 20e-7
 t_etl = 40*1e-7
 t_bqd = t_hil+t_htl
-r_qdc = 2.75e-7
+r_qdc = 1.75e-7
 r_qds = 1e-7
 r_qd = r_qdc+r_qds
 t_aqd=t_hil+t_htl+4*(r_qd)
@@ -32,17 +32,17 @@ x = np.concatenate((np.linspace(0, dd, 20, endpoint=False),                     
                     np.linspace((t_total) - dd, (t_total), 20)))                       # R contact interface
 # Build system
 sys = sesame.Builder(x)
-#qd_mnc, qd_mpc=.13,.45
-#qd_mns, qd_mps=.19,.6
-qd_mnc, qd_mpc=.2,.4
-qd_mns, qd_mps=.2,.4
+qd_mnc, qd_mpc=.13,.45
+qd_mns, qd_mps=.19,.6
+#qd_mnc, qd_mpc=.2,.4
+#qd_mns, qd_mps=.2,.4
 # CdS material dictionary
 htl = {'Nc': 2.5e19, 'Nv':2.5e19, 'Eg':2.7, 'epsilon':5, 'Et': 0,
         'mu_e':0.002, 'mu_h':0.002, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
         'affinity': 2.6}
 qdc = {'Nc': 2.5e19*pow(qd_mnc,1.5), 'Nv':2.5e19*pow(qd_mpc,1.5), 'Eg':2.28, 'epsilon':8, 'Et': 0,
         'mu_e':0.000001, 'mu_h':0.000001, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
-        'affinity': 3.7,'Cn':pow(10,-32),'Cp':pow(10,-32),'B':.5*pow(10,-13)}
+        'affinity': 3.7,'Cn':pow(10,-31),'Cp':pow(10,-31),'B':.5*pow(10,-12)}
 # CdTe material dictionary'''''' ''''''
 
 etl = {'Nc': 2.5e19*pow(.24,1.5), 'Nv': 2.5e19*pow(.59,1.5), 'Eg':3.4, 'epsilon':8, 'Et': 0,
@@ -73,7 +73,7 @@ sys.add_acceptor(1e17, htl_region)
 # Define contacts: CdS contact is Ohmic, CdTe contact is Schottky
 Lcontact_type, Rcontact_type = 'Schottky', 'Schottky'
 #Lcontact_type, Rcontact_type = 'Ohmic', 'Ohmic'
-Lcontact_workFcn, Rcontact_workFcn = 5.157, 4.15
+Lcontact_workFcn, Rcontact_workFcn = 5.1, 4.15
 # Add the contacts
 sys.contact_type(Lcontact_type, Rcontact_type, Lcontact_workFcn, Rcontact_workFcn)
 
@@ -88,7 +88,7 @@ sys.contact_S(Sn_left, Sp_left, Sn_right, Sp_right)
 # Specify the applied voltage values
 voltages = np.linspace(0,6,300)
 # Perform I-V calculation
-export_folder="SS51O_sym_B100x"
+export_folder="paperlike2"
 os.makedirs(export_folder, exist_ok=True)
 j,l = sesame.IVcurve(sys, voltages, export_folder+"/1dQD_V",htp=1,maxiter=1500)
 j = j * sys.scaling.current

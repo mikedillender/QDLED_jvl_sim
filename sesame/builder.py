@@ -126,6 +126,10 @@ class Builder():
 
     def add_qd(self, t_s_nm, qd_mns=.19, qd_mps=.6, dEc=.28, dEv=.28, location=lambda pos: True, temp=300):
         self.qd_sites = (np.where(location(self.xpts))[0])
+        # Store QD/transport-layer band offsets in eV. These enter the
+        # JMK effective capture fields as E = -(dphi + dE/q)/r_qd.
+        self.qd_dEc = dEc
+        self.qd_dEv = dEv
         self.eml_sites=[self.qd_sites[0]-1,self.qd_sites[0],self.qd_sites[1],self.qd_sites[1]+1]
         self.rqd = (self.xpts[self.qd_sites[1]] - self.xpts[self.qd_sites[0]]) / 2
         self.qd_links = self.qd_sites.copy()
