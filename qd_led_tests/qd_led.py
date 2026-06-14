@@ -1,150 +1,165 @@
 import os
 
-import sesame
 import numpy as np
-import scipy.io
-from scipy.io import savemat
+import sesame
 
 
-t_hil = 30*1e-7
-t_htl = 25e-7
-t_etl = 20*1e-7
-t_bqd = t_hil+t_htl
-r_qdc = 4e-7
-r_qds = 1e-7
-r_qd = r_qdc+r_qds
-t_aqd=t_hil+t_htl+4*(r_qd)
-t_total=t_aqd+t_etl
-print("t_total = ",t_total,"|  rqd = ",r_qd, "| taqd = ",t_aqd, "| tbqd = ", t_bqd)
+def build_system(m_qd=2):
+    """Build the QD-LED structure with a user-selectable number of discrete QD sites."""
+    if m_qd < 1:
+        raise ValueError("m_qd must be >= 1")
 
-# Heterojunctions require dense mesh near the interface
-dd = 4e-7   # 2*dd is the distance over which mesh is refined
-dd2 = 1.5e-7
-# Define the mesh
-x = np.concatenate((np.linspace(0, dd, 30, endpoint=False),                        # L contact interface
-                    np.linspace(dd, t_hil-dd2, 40, endpoint=False),                    # material 1
-                    np.linspace(t_hil - dd2, t_hil + dd2, 20, endpoint=False),             # interface 1
-                    np.linspace(t_hil + dd2, (t_bqd) - dd, 40, endpoint=False),       # material 2
-                    np.linspace((t_bqd) - dd, (t_bqd), 20, endpoint=False),      # htl-qd interface
-                    [(t_bqd)+r_qd, (t_aqd)-r_qd],      # QD
-                    np.linspace((t_aqd), (t_aqd) + dd, 20, endpoint=False),      # qd-etl interface
-                    np.linspace((t_aqd) + dd, (t_total) - dd, 40, endpoint=False),       # material 2
-                    np.linspace((t_total) - dd, (t_total), 30)))                       # R contact interface
-# Build system
-sys = sesame.Builder(x)
-# Define effective masses
-qd_mnc, qd_mpc=.2,.45
-qd_mns, qd_mps=.19,.6
-#qd_mnc, qd_mpc=.2,.4
-#qd_mns, qd_mps=.2,.4
-# CdS material dictionary
-#hil = {'Nc': 2.5e19, 'Nv':2.5e19, 'Eg':1.57, 'epsilon':3, 'Et': 0,
-#        'mu_e':0.000322, 'mu_h':0.000322, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
-#        'affinity': 3.6}
-hil = {'Nc': 2.5e19, 'Nv':2.5e19, 'Eg':1.57, 'epsilon':4, 'Et': 0,
-        'mu_e':0.00322, 'mu_h':0.00322, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
-        'affinity': 3.6}
-htl = {'Nc': 2.5e19, 'Nv':2.5e19, 'Eg':3, 'epsilon':4, 'Et': 0,
-        'mu_e':0.002, 'mu_h':0.002, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
-        'affinity': 2.6}
-qdc = {'Nc': 2.5e19*pow(qd_mnc,1.5), 'Nv':2.5e19*pow(qd_mpc,1.5), 'Eg':2.28, 'epsilon':7, 'Et': 0,
-        'mu_e':0.000001, 'mu_h':0.000001, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
-        'affinity': 3.66,'Cn':pow(10,-31),'Cp':pow(10,-31),'B':.58*pow(10,-12)}
-# CdTe material dictionary'''''' ''''''
-etl = {'Nc': 2.5e19*pow(.24,1.5), 'Nv': 2.5e19*pow(.59,1.5), 'Eg':3.4, 'epsilon':7, 'Et': 0,
-        'mu_e':0.002, 'mu_h':0.002, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
-        'affinity': 4}
-'''
-etl = {'Nc': 2.5e19, 'Nv': 2.5e19, 'Eg':3.4, 'epsilon':5, 'Et': 0,
-        'mu_e':0.002, 'mu_h':0.002, 'tau_e':1.2e-6, 'tau_h':1.2e-6,
-        'affinity': 4}
-'''
-# CdS region
-hil_region = lambda x: x<=t_hil
-htl_region = lambda x: np.logical_and(x>t_hil, x<=t_bqd)
-qd_region = lambda x: np.logical_and(t_bqd<x, x<t_aqd)
-etl_region = lambda x: (x>=t_aqd)
+    t_hil = 30e-7
+    t_htl = 25e-7
+    t_etl = 20e-7
+    t_bqd = t_hil + t_htl
 
-# Add the material to the system
-sys.add_material(etl, etl_region)     # adding CdS
-sys.add_material(htl, htl_region)     # adding CdTe
-sys.add_material(hil, hil_region)     # adding CdTe
-sys.add_material(qdc, qd_region)     # adding CdTe
-dEc=etl['affinity']-qdc['affinity']
-dEv=qdc['affinity']+qdc['Eg']-(htl['affinity']+htl['Eg'])
-sys.add_qd(1.0,qd_mns=qd_mns,qd_mps=qd_mps,dEc=dEc,dEv=dEv,location=qd_region)
+    r_qdc = 4e-7
+    r_qds = 1e-7
+    r_qd = r_qdc + r_qds
 
+    t_qdl = 2 * m_qd * r_qd
+    t_aqd = t_bqd + t_qdl
+    t_total = t_aqd + t_etl
 
-print(dEc,dEv)
-print("delta: ",dEc-dEv)
-# Add the donor densities
-sys.add_donor(1e17, etl_region)
-sys.add_acceptor(1e17, htl_region)
-sys.add_acceptor(2e19, hil_region)
+    print(
+        "m_qd =", m_qd,
+        "| t_total =", t_total,
+        "| rqd =", r_qd,
+        "| taqd =", t_aqd,
+        "| tbqd =", t_bqd,
+    )
 
-# Define contacts: CdS contact is Ohmic, CdTe contact is Schottky
-Lcontact_type, Rcontact_type = 'Ohmic', 'Schottky'
-#Lcontact_type, Rcontact_type = 'Ohmic', 'Ohmic'
-Lcontact_workFcn, Rcontact_workFcn = 4.7, 4.15   # Lcontact work function irrelevant because L contact is Ohmic
-# Add the contacts
-sys.contact_type(Lcontact_type, Rcontact_type, Lcontact_workFcn, Rcontact_workFcn)
+    # Heterojunctions require dense mesh near the interface.
+    dd = 4e-7
+    dd2 = 1.5e-7
+    qd_centers = t_bqd + (2 * np.arange(m_qd) + 1) * r_qd
 
-# Define the surface recombination velocities for electrons and holes [m/s]
-Scontact = 1.16e4  # [cm/s]
-# non-selective contacts
-Sn_left, Sp_left, Sn_right, Sp_right = Scontact, Scontact, Scontact, Scontact
-# This function specifies the simulation contact recombination velocity
-sys.contact_S(Sn_left, Sp_left, Sn_right, Sp_right)
+    x = np.concatenate((
+        np.linspace(0, dd, 30, endpoint=False),
+        np.linspace(dd, t_hil - dd2, 40, endpoint=False),
+        np.linspace(t_hil - dd2, t_hil + dd2, 20, endpoint=False),
+        np.linspace(t_hil + dd2, t_bqd - dd, 40, endpoint=False),
+        np.linspace(t_bqd - dd, t_bqd, 20, endpoint=False),
+        qd_centers,
+        np.linspace(t_aqd, t_aqd + dd, 20, endpoint=False),
+        np.linspace(t_aqd + dd, t_total - dd, 40, endpoint=False),
+        np.linspace(t_total - dd, t_total, 30),
+    ))
 
+    sys = sesame.Builder(x)
 
-# Specify the applied voltage values
+    qd_mnc, qd_mpc = 0.2, 0.45
+    qd_mns, qd_mps = 0.19, 0.60
 
-'''voltages = np.concatenate((np.linspace(0, 1.5, 80, endpoint=False),                        # L contact interface
-                    np.linspace(1.5,2.5, 100, endpoint=False),                    # material 1
-                    np.linspace(2.5, 6, 100,endpoint=False)))
-                    '''
-voltages=np.linspace(0,7,300)
-# Perform I-V calculation
-export_folder="qd_small"
-os.makedirs(export_folder, exist_ok=True)
-j,l = sesame.IVcurve(sys, voltages, export_folder+"/1dQD_V",tol=1e-5,htp=1,maxiter=1000)
-j = j * sys.scaling.current
+    hil = {
+        'Nc': 2.5e19, 'Nv': 2.5e19, 'Eg': 1.57, 'epsilon': 4, 'Et': 0,
+        'mu_e': 0.00322, 'mu_h': 0.00322, 'tau_e': 1.2e-6, 'tau_h': 1.2e-6,
+        'affinity': 3.6,
+    }
+    htl = {
+        'Nc': 2.5e19, 'Nv': 2.5e19, 'Eg': 3.0, 'epsilon': 4, 'Et': 0,
+        'mu_e': 0.002, 'mu_h': 0.002, 'tau_e': 1.2e-6, 'tau_h': 1.2e-6,
+        'affinity': 2.6,
+    }
+    qdc = {
+        'Nc': 2.5e19 * pow(qd_mnc, 1.5),
+        'Nv': 2.5e19 * pow(qd_mpc, 1.5),
+        'Eg': 2.28, 'epsilon': 7, 'Et': 0,
+        'mu_e': 1e-6, 'mu_h': 1e-6, 'tau_e': 1.2e-6, 'tau_h': 1.2e-6,
+        'affinity': 3.66, 'Cn': 1e-31, 'Cp': 1e-31, 'B': 0.58e-12,
+    }
+    etl = {
+        'Nc': 2.5e19 * pow(0.24, 1.5),
+        'Nv': 2.5e19 * pow(0.59, 1.5),
+        'Eg': 3.4, 'epsilon': 7, 'Et': 0,
+        'mu_e': 0.002, 'mu_h': 0.002, 'tau_e': 1.2e-6, 'tau_h': 1.2e-6,
+        'affinity': 4.0,
+    }
 
-result = {'v':voltages, 'j':j}
-np.save(export_folder+"/qd_iv", result)
+    hil_region = lambda x: x <= t_hil
+    htl_region = lambda x: np.logical_and(x > t_hil, x <= t_bqd)
+    qd_region = lambda x: np.logical_and(t_bqd < x, x < t_aqd)
+    etl_region = lambda x: x >= t_aqd
 
-# plot I-V curve
-try:
-    import matplotlib.pyplot as plt
+    sys.add_material(etl, etl_region)
+    sys.add_material(htl, htl_region)
+    sys.add_material(hil, hil_region)
+    sys.add_material(qdc, qd_region)
 
-    fig, ax = plt.subplots()   # creates a new figure and axes
+    dEc = etl['affinity'] - qdc['affinity']
+    dEv = qdc['affinity'] + qdc['Eg'] - (htl['affinity'] + htl['Eg'])
+    print("dEc, dEv =", dEc, dEv, "| delta =", dEc - dEv)
 
-    ax.plot(voltages, j, '-o')
-    plt.ylim(1e-10,1)
-    ax.set_xlabel('Voltage [V]')
-    ax.set_ylabel('Current [A/cm^2]')
-    ax.set_yscale('log')
-    ax.grid(True)
+    sys.add_qd(
+        1.0,
+        qd_mns=qd_mns,
+        qd_mps=qd_mps,
+        dEc=dEc,
+        dEv=dEv,
+        location=qd_region,
+        r_qd=r_qd,
+    )
 
-    #plt.show()
+    sys.add_donor(1e17, etl_region)
+    sys.add_acceptor(1e17, htl_region)
+    sys.add_acceptor(2e19, hil_region)
 
-    fig, ax = plt.subplots()   # creates a new figure and axes
+    Lcontact_type, Rcontact_type = 'Ohmic', 'Schottky'
+    Lcontact_workFcn, Rcontact_workFcn = 4.7, 4.15
+    sys.contact_type(Lcontact_type, Rcontact_type, Lcontact_workFcn, Rcontact_workFcn)
 
-    ax.plot(voltages, l, '-o')
-    ax.set_xlabel('Voltage [V]')
-    ax.set_ylabel('EQE')
-    #ax.set_yscale('log')
-    ax.grid(True)
-    '''fig, ax = plt.subplots()   # creates a new figure and axes
-    ax.plot(voltages, j/l, '-o')
-    ax.set_xlabel('Voltage [V]')
-    ax.set_ylabel('EQE')
-    ax.set_yscale('log')
-    ax.grid(True)'''
+    Scontact = 1.16e4  # cm/s
+    sys.contact_S(Scontact, Scontact, Scontact, Scontact)
 
-    plt.show()
-
-except ImportError:
-    print("Matplotlib not installed, can't make plot")
+    return sys
 
 
+def run_iv(m_qd=2, voltages=None, export_root="qd_small_variable_m", maxiter=1000, tol=1e-5):
+    if voltages is None:
+        voltages = np.linspace(0, 7, 300)
+
+    sys = build_system(m_qd=m_qd)
+    export_folder = os.path.join(export_root, f"m{m_qd}")
+    os.makedirs(export_folder, exist_ok=True)
+
+    j, l = sesame.IVcurve(
+        sys,
+        voltages,
+        os.path.join(export_folder, "1dQD_V"),
+        tol=tol,
+        htp=1,
+        maxiter=maxiter,
+    )
+    j = j * sys.scaling.current
+
+    result = {'v': voltages, 'j': j, 'l': l, 'm_qd': m_qd}
+    np.save(os.path.join(export_folder, "qd_iv"), result)
+    return sys, result
+
+
+if __name__ == "__main__":
+    voltages = np.linspace(0, 7, 300)
+    sys, result = run_iv(m_qd=2, voltages=voltages)
+
+    try:
+        import matplotlib.pyplot as plt
+
+        fig, ax = plt.subplots()
+        ax.plot(result['v'], result['j'], '-o')
+        ax.set_ylim(1e-10, 1)
+        ax.set_xlabel('Voltage [V]')
+        ax.set_ylabel('Current [A/cm$^2$]')
+        ax.set_yscale('log')
+        ax.grid(True)
+
+        fig, ax = plt.subplots()
+        ax.plot(result['v'], result['l'], '-o')
+        ax.set_xlabel('Voltage [V]')
+        ax.set_ylabel('EQE')
+        ax.grid(True)
+
+        plt.show()
+
+    except ImportError:
+        print("Matplotlib not installed, can't make plot")

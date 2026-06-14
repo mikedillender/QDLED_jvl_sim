@@ -8,6 +8,25 @@ import numpy as np
 import scipy.constants as cts
 
 
+def _qd_local_sites_and_links(sys, sites_i):
+    """Return local indices for QD sites/links inside a current vector.
+
+    Sesame sometimes calls current functions with arrays starting at link/site 0
+    and sometimes with arrays shifted by one. The original QD code handled this
+    by subtracting one from hard-coded indices when sites_i[0] != 0. This helper
+    generalizes the same convention to an arbitrary number of QD sites.
+    """
+    shift = 0 if sites_i[0] == 0 else -1
+    return np.asarray(sys.qd_sites, dtype=int) + shift, np.asarray(sys.qd_links, dtype=int) + shift
+
+
+def _qd_capture_mu(E_eff, alpha, rqd, scaling):
+    """Field-dependent JMK capture prefactor with a hard E_eff >= 0 cutoff."""
+    F0 = 5e6
+    Epos = np.maximum(E_eff, 0.0)
+    return np.sqrt(Epos ** 3 / F0) * alpha / scaling.current
+
+
 def get_n(sys, efn, v, sites):
     """
     Compute the electron density on the given sites.
@@ -135,25 +154,20 @@ def get_jn(sys, efn, v, sites_i, sites_ip1, dl):
     mu = sys.mu_e[sites_i]
 
     if (sys.has_qd and len(sites_i) > 1):
-        qd1_i=sys.qd_sites[0] if sites_i[0] == 0 else sys.qd_sites[0]-1
-        qd_links=sys.qd_links if sites_i[0] ==0 else sys.qd_links-1
-        qd2_i=qd1_i+1
-        vd=(4e10*sys.rqd*2)*(cts.e*1e19)
-        vd=vd/sys.scaling.current
-        n_qd1=exp(efnp0[qd1_i]+vp0[qd1_i])
-        n_qd2=exp(efnp0[qd2_i]+vp0[qd2_i])
-        n_etl=exp(efnp0[qd2_i+1]+vp0[qd2_i+1])
-        jnt_qd = vd*(n_qd2-n_qd1)
+        qd_sites_l, qd_links = _qd_local_sites_and_links(sys, sites_i)
+        vd = (4e10 * sys.rqd * 2) * (cts.e * 1e19)
+        vd = vd / sys.scaling.current
+        n_qd = exp(efnp0[qd_sites_l] + vp0[qd_sites_l])
+        n_etl = exp(efnp0[qd_sites_l[-1] + 1] + vp0[qd_sites_l[-1] + 1])
 
-        dphi=(v[sys.qd_sites[1]+1]-v[sys.qd_sites[1]])* sys.scaling.energy
+        dphi = (v[sys.qd_sites[-1] + 1] - v[sys.qd_sites[-1]]) * sys.scaling.energy
         # JMK effective ETL->QD electron injection field includes the
         # conduction-band offset: E_n = -(dphi + dEc) / r_qd.
-        lambdae=(((cts.e*sys.scaling.density)*(np.pi*sys.scaling.density*sys.rqd**3)))*sys.qd_alpha_n
-        E_etl=-(dphi + getattr(sys, 'qd_dEc', 0.0)) / sys.rqd
-        F0=5e6
-        Epos=np.maximum(E_etl, 0.0)
-        mu_E=np.sqrt(np.pow(Epos,3)/F0)*lambdae/sys.scaling.current
-        jni_qd=mu_E*(sys.qd_density-n_qd2)*n_etl
+        lambdae = (((cts.e * sys.scaling.density) *
+                    (np.pi * sys.scaling.density * sys.rqd ** 3))) * sys.qd_alpha_n
+        E_etl = -(dphi + getattr(sys, 'qd_dEc', 0.0)) / sys.rqd
+        mu_E = _qd_capture_mu(E_etl, lambdae, sys.rqd, sys.scaling)
+        jni_qd = mu_E * (sys.qd_density - n_qd[-1]) * n_etl
 
     jn = (    mu * exp(efnp1)*(1 - exp(efnp0-efnp1)) / dl * dv / (-exp(-vp0) * (1 - exp(dv))) * (np.abs(dv0) >= tol2) + \
          -1 * mu * exp(efnp1)*(1 - exp(efnp0-efnp1)) / dl / (-exp(-vp0) * (1 + .5 * dv0 + 1/6.*(dv0)**2)) * (np.abs(dv0) < tol2)) * (np.abs(defn)>=tol3) + \
@@ -161,12 +175,10 @@ def get_jn(sys, efn, v, sites_i, sites_ip1, dl):
          -1 * mu * exp(efnp1)*(-(efnp0 - efnp1))     / dl / (-exp(-vp0) * (1 + .5 * dv0 + 1 / 6. * (dv0) ** 2)) * (np.abs(dv0) < tol2)) * (np.abs(defn) < tol3)
 
     if (sys.has_qd and len(sites_i) > 1):
-        jn[qd_links]/=1e8
-        jn[qd1_i]+= jnt_qd
-        jn[qd2_i]+= jni_qd
-        #print("jn at etl interface was ",jn[qd2_i],', adding ', jni_qd,' (vt = ',jnt_qd,")")
-        #print(" - n_qd1 ",n_qd1,", n_qd2 ", n_qd2,", n_etl ",n_etl)
-        #jn[sites_i < qd1_i] = 0
+        jn[qd_links] /= 1e8
+        for k in range(len(qd_sites_l) - 1):
+            jn[qd_sites_l[k]] += vd * (n_qd[k + 1] - n_qd[k])
+        jn[qd_sites_l[-1]] += jni_qd
 
 
 
@@ -218,32 +230,20 @@ def get_jp(sys, efp, v, sites_i, sites_ip1, dl):
     mu = sys.mu_h[sites_i]
     #V=sys.V
     if (sys.has_qd and len(sites_i) > 1):
-        qd1_i=sys.qd_sites[0] if sites_i[0] == 0 else sys.qd_sites[0]-1
-        qd1_j=sys.qd_sites[0] if sites_i[0] == 0 else sys.qd_sites[0]-1
-        qd_links=sys.qd_links if sites_i[0] ==0 else sys.qd_links-1
-        qd2_i=qd1_i+1
-        vd=(7.1e9*sys.rqd*2)*(cts.e*sys.scaling.density)
-        vd=-vd/sys.scaling.current
-        p_qd1=exp(efpp0[qd1_i]-vp0[qd1_i])
-        p_qd2=exp(efpp0[qd2_i]-vp0[qd2_i])
-        p_htl=exp(efpp0[qd1_i-1]-vp0[qd1_i-1])
+        qd_sites_l, qd_links = _qd_local_sites_and_links(sys, sites_i)
+        vd = (7.1e9 * sys.rqd * 2) * (cts.e * sys.scaling.density)
+        vd = -vd / sys.scaling.current
+        p_qd = exp(efpp0[qd_sites_l] - vp0[qd_sites_l])
+        p_htl = exp(efpp0[qd_sites_l[0] - 1] - vp0[qd_sites_l[0] - 1])
 
-        jpt_qd=vd*(p_qd2-p_qd1)
-
-        dphi=(v[sys.qd_sites[0]]-v[sys.qd_sites[0]-1])
-        lambdah=(((cts.e*sys.scaling.density)*(np.pi*sys.scaling.density*sys.rqd**3)))*sys.qd_alpha_p
+        dphi = (v[sys.qd_sites[0]] - v[sys.qd_sites[0] - 1])
+        lambdah = (((cts.e * sys.scaling.density) *
+                    (np.pi * sys.scaling.density * sys.rqd ** 3))) * sys.qd_alpha_p
         # JMK effective HTL->QD hole injection field includes the
         # valence-band offset: E_p = -(dphi + dEv/q) / r_qd.
-        E_htl=-(dphi * sys.scaling.energy + getattr(sys, 'qd_dEv', 0.0))/sys.rqd
-        F0=5e6
-        Epos=np.maximum(E_htl, 0.0)
-        mu_E=np.sqrt(np.pow(Epos,3)/F0)*lambdah/sys.scaling.current
-        #if(E_htl>0):
-        #    print("HTL POSITIVE FIELD!",E_htl)
-        #("htl ",E_htl)
-
-        jpi_qd=mu_E*(sys.qd_density-p_qd1)*p_htl
-        #print("field at interface is ",E_htl,", p_htl = ",p_htl,", p_qd1 ",p_qd1," lambdah = ",lambdah,", mu_f = ",mu_E," jpi_qd = ",jpi_qd)
+        E_htl = -(dphi * sys.scaling.energy + getattr(sys, 'qd_dEv', 0.0)) / sys.rqd
+        mu_E = _qd_capture_mu(E_htl, lambdah, sys.rqd, sys.scaling)
+        jpi_qd = mu_E * (sys.qd_density - p_qd[0]) * p_htl
 
 
     jp = (mu * exp(efpp1) * (1 - exp(efpp0-efpp1)) / dl * dv / (-exp(vp0) * (1 - exp(-dv))) * (np.abs(dv0) >= tol2) + \
@@ -252,12 +252,11 @@ def get_jp(sys, efp, v, sites_i, sites_ip1, dl):
           mu * exp(efpp1) * ( -(efpp0 - efpp1))    / dl * 1 / (-exp(vp0) * (1 - .5 * (dv0) + 1 / 6. * (dv0) ** 2.)) * (np.abs(dv0) < tol2)) * (np.abs(defp) < tol3)
 
     if (sys.has_qd and len(sites_i) > 1):
-        jp[qd_links]/=1e8
-        jp[qd1_i]+=jpt_qd
-        jp[qd1_i-1]*=mu[qd1_i]/mu[qd1_i-1]
-        #print("jp at htl interface was ",jp[qd1_i-1],', adding ', jpi_qd,' (vt = ',jpt_qd,")")
-        #print(" - p_htl ",p_htl,", n_qd1 ",p_qd1,", n_qd2 ", p_qd2)
-        jp[qd1_i-1]+=+jpi_qd
+        jp[qd_links] /= 1e8
+        for k in range(len(qd_sites_l) - 1):
+            jp[qd_sites_l[k]] += vd * (p_qd[k + 1] - p_qd[k])
+        jp[qd_sites_l[0] - 1] *= mu[qd_sites_l[0]] / mu[qd_sites_l[0] - 1]
+        jp[qd_sites_l[0] - 1] += jpi_qd
         #jp[sites_i >= qd2_i] = 0
     #if(len(sites_i)>1):
     #    print('hi',jpt_qd,jp[qd1_i])
@@ -284,28 +283,20 @@ def get_jn_derivs(sys, efn, v, sites_i, sites_ip1, dl):
     ev0 = exp(-vp0)
 
     if (sys.has_qd and len(sites_i) > 1):
-        qd1_i=sys.qd_sites[0] if sites_i[0] == 0 else sys.qd_sites[0]-1
-        qd_links=sys.qd_links if sites_i[0] ==0 else sys.qd_links-1
-        qd2_i=qd1_i+1
-        vd=(4e10*sys.rqd*2)*(cts.e*1e19)
-        vd=vd/sys.scaling.current
-        n_qd1=exp(efnp0[qd1_i]+vp0[qd1_i])
-        n_qd2=exp(efnp0[qd2_i]+vp0[qd2_i])
-        jnt_qd=vd*(n_qd2-n_qd1)
+        qd_sites_l, qd_links = _qd_local_sites_and_links(sys, sites_i)
+        vd = (4e10 * sys.rqd * 2) * (cts.e * 1e19)
+        vd = vd / sys.scaling.current
+        n_qd = exp(efnp0[qd_sites_l] + vp0[qd_sites_l])
+        n_etl = exp(efnp0[qd_sites_l[-1] + 1] + vp0[qd_sites_l[-1] + 1])
 
-        n_etl=exp(efnp0[qd2_i+1]+vp0[qd2_i+1])
-        dphi=(v[sys.qd_sites[1]+1]-v[sys.qd_sites[1]])
-        lambdae=(((cts.e*sys.scaling.density)*(np.pi*sys.scaling.density*(sys.rqd**3))))*sys.qd_alpha_n
+        dphi = (v[sys.qd_sites[-1] + 1] - v[sys.qd_sites[-1]])
+        lambdae = (((cts.e * sys.scaling.density) *
+                    (np.pi * sys.scaling.density * (sys.rqd ** 3)))) * sys.qd_alpha_n
         u_etl = dphi + getattr(sys, 'qd_dEc', 0.0) / sys.scaling.energy
-        E_etl=-(u_etl * sys.scaling.energy) / sys.rqd
-        F0=5e6
-        Epos=np.maximum(E_etl, 0.0)
-        mu_E=np.sqrt(np.pow(Epos,3)/F0)*lambdae/sys.scaling.current
+        E_etl = -(u_etl * sys.scaling.energy) / sys.rqd
+        mu_E = _qd_capture_mu(E_etl, lambdae, sys.rqd, sys.scaling)
         inj_denom_etl = max(abs(u_etl), 1e-300)
-        #print("etl ", E_etl)
-        #if(E_etl>0):
-        #    print("ETL POSITIVE FIELD! ",E_etl,' v1 ',v[sys.qd_sites[1]+1]," v2 ",v[sys.qd_sites[1]])
-        jni_qd=mu_E*(sys.qd_density-n_qd2)*n_etl
+        jni_qd = mu_E * (sys.qd_density - n_qd[-1]) * n_etl
 
 
 
@@ -336,31 +327,25 @@ def get_jn_derivs(sys, efn, v, sites_i, sites_ip1, dl):
     defn_i, defn_ip1, dv_i, dv_ip1=mu * defn_i, mu * defn_ip1, mu * dv_i, mu * dv_ip1
 
     if (sys.has_qd and len(sites_i) > 1):
-        dv_i[qd_links]/=1e8
-        dv_ip1[qd_links]/=1e8
-        defn_i[qd_links]/=1e8
-        defn_ip1[qd_links]/=1e8
-        '''
-        dv_i[sites_i < qd1_i]=0
-        dv_ip1[sites_i < qd1_i]=0
-        defn_i[sites_i < qd1_i]=0
-        defn_ip1[sites_i < qd1_i]=0'''
-        #print('dv was ',dv_i[qd1_i],", now ",-vd*n_qd1)
-        # dot to dot
-        dv_i[qd1_i] += - vd*n_qd1
-        dv_ip1[qd1_i] += + vd*n_qd2
-        defn_i[qd1_i] += - vd*n_qd1
-        defn_ip1[qd1_i] += + vd*n_qd2
-        #print("dphi ",dphi)
-        #print("was dv_i",  dv_i[qd2_i], ', dv_ip1 ', dv_ip1[qd2_i], " defn_i  ", defn_i[qd2_i], " defn_ip1  ", defn_ip1[qd2_i], ")")
-        #etl injection
-        dv_i[qd2_i] += + (3*jni_qd/(2*inj_denom_etl)-mu_E*n_qd2*n_etl)
-        dv_ip1[qd2_i] += + jni_qd*(-3/(2*inj_denom_etl)+1)
-        defn_i[qd2_i] += - mu_E*n_qd2*n_etl
-        defn_ip1[qd2_i] += + jni_qd
+        dv_i[qd_links] /= 1e8
+        dv_ip1[qd_links] /= 1e8
+        defn_i[qd_links] /= 1e8
+        defn_ip1[qd_links] /= 1e8
 
-        #print("qd2 dv_i",  dv_i[qd2_i], ', dv_ip1 ', dv_ip1[qd2_i], " defn_i  ", defn_i[qd2_i], " defn_ip1  ", defn_ip1[qd2_i], ", (",dphi,")")#'''
-        #print("   n_etl = ", n_etl," p_qd1 = ", n_qd1," p_qd2 = ", n_qd2)
+        # QD-to-QD electron hopping links.
+        for k in range(len(qd_sites_l) - 1):
+            link = qd_sites_l[k]
+            dv_i[link] += -vd * n_qd[k]
+            dv_ip1[link] += +vd * n_qd[k + 1]
+            defn_i[link] += -vd * n_qd[k]
+            defn_ip1[link] += +vd * n_qd[k + 1]
+
+        # ETL -> last QD electron capture link.
+        link = qd_sites_l[-1]
+        dv_i[link] += +(3 * jni_qd / (2 * inj_denom_etl) - mu_E * n_qd[-1] * n_etl)
+        dv_ip1[link] += +jni_qd * (-3 / (2 * inj_denom_etl) + 1)
+        defn_i[link] += -mu_E * n_qd[-1] * n_etl
+        defn_ip1[link] += +jni_qd
 
 
     return defn_i, defn_ip1, dv_i, dv_ip1
@@ -386,25 +371,21 @@ def get_jp_derivs(sys, efp, v, sites_i, sites_ip1, dl):
 
 
     if (sys.has_qd and len(sites_i) > 1):
-        qd1_i=sys.qd_sites[0] if sites_i[0] == 0 else sys.qd_sites[0]-1
-        qd_links=sys.qd_links if sites_i[0] ==0 else sys.qd_links-1
-        qd2_i=qd1_i+1
-        vd=(7.1e9*sys.rqd*2)*(cts.e*1e19)
-        vd=-vd/sys.scaling.current
+        qd_sites_l, qd_links = _qd_local_sites_and_links(sys, sites_i)
+        vd = (7.1e9 * sys.rqd * 2) * (cts.e * 1e19)
+        vd = -vd / sys.scaling.current
 
-        p_qd1=exp(efpp0[qd1_i]-vp0[qd1_i])
-        p_qd2=exp(efpp0[qd2_i]-vp0[qd2_i])
-        p_htl=exp(efpp0[qd1_i-1]-vp0[qd1_i-1])
+        p_qd = exp(efpp0[qd_sites_l] - vp0[qd_sites_l])
+        p_htl = exp(efpp0[qd_sites_l[0] - 1] - vp0[qd_sites_l[0] - 1])
 
-        dphi=(v[sys.qd_sites[0]]-v[sys.qd_sites[0]-1])
-        lambdah=(((cts.e*sys.scaling.density)*(np.pi*sys.scaling.density*sys.rqd**3)))*sys.qd_alpha_p
+        dphi = (v[sys.qd_sites[0]] - v[sys.qd_sites[0] - 1])
+        lambdah = (((cts.e * sys.scaling.density) *
+                    (np.pi * sys.scaling.density * sys.rqd ** 3))) * sys.qd_alpha_p
         u_htl = dphi + getattr(sys, 'qd_dEv', 0.0) / sys.scaling.energy
-        E_htl=-(u_htl*sys.scaling.energy)/sys.rqd
-        F0=5e6
-        Epos=np.maximum(E_htl, 0.0)
-        mu_E=np.sqrt(np.pow(Epos,3)/F0)*lambdah/sys.scaling.current
+        E_htl = -(u_htl * sys.scaling.energy) / sys.rqd
+        mu_E = _qd_capture_mu(E_htl, lambdah, sys.rqd, sys.scaling)
         inj_denom_htl = max(abs(u_htl), 1e-300)
-        jpi_qd=mu_E*(sys.qd_density-p_qd1)*p_htl
+        jpi_qd = mu_E * (sys.qd_density - p_qd[0]) * p_htl
 
 
     defp_i = -(exp(efpp0 - vp0) * dv / (dl * (1 - exp(-dv))) * (np.abs(dv0) >= tol2) + \
@@ -434,34 +415,31 @@ def get_jp_derivs(sys, efp, v, sites_i, sites_ip1, dl):
     defp_i, defp_ip1, dv_i, dv_ip1=mu * defp_i, mu * defp_ip1, mu * dv_i, mu * dv_ip1
     ''''''
     if (sys.has_qd and len(sites_i) > 1):
-        dv_i[qd_links]/=1e8
-        dv_ip1[qd_links]/=1e8
-        defp_i[qd_links]/=1e8
-        defp_ip1[qd_links]/=1e8
-        '''
-        dv_i[sites_i >= qd2_i]=0
-        dv_ip1[sites_i >= qd2_i]=0
-        defp_i[sites_i >= qd2_i]=0
-        defp_ip1[sites_i >= qd2_i]=0'''
+        dv_i[qd_links] /= 1e8
+        dv_ip1[qd_links] /= 1e8
+        defp_i[qd_links] /= 1e8
+        defp_ip1[qd_links] /= 1e8
 
-        dv_i[qd1_i-1]*=mu[qd1_i]/mu[qd1_i-1]
-        dv_ip1[qd1_i-1]*=mu[qd1_i]/mu[qd1_i-1]
-        defp_i[qd1_i-1]*=mu[qd1_i]/mu[qd1_i-1]
-        defp_ip1[qd1_i-1]*=mu[qd1_i]/mu[qd1_i-1]
+        htl_link = qd_sites_l[0] - 1
+        dv_i[htl_link] *= mu[qd_sites_l[0]] / mu[htl_link]
+        dv_ip1[htl_link] *= mu[qd_sites_l[0]] / mu[htl_link]
+        defp_i[htl_link] *= mu[qd_sites_l[0]] / mu[htl_link]
+        defp_ip1[htl_link] *= mu[qd_sites_l[0]] / mu[htl_link]
 
-        dv_i[qd1_i] += + vd*p_qd1
-        dv_ip1[qd1_i] +=  -vd*p_qd2
-        defp_i[qd1_i] += + vd*p_qd1
-        defp_ip1[qd1_i] += -vd*p_qd2
+        # QD-to-QD hole hopping links.
+        for k in range(len(qd_sites_l) - 1):
+            link = qd_sites_l[k]
+            dv_i[link] += +vd * p_qd[k]
+            dv_ip1[link] += -vd * p_qd[k + 1]
+            defp_i[link] += +vd * p_qd[k]
+            defp_ip1[link] += -vd * p_qd[k + 1]
 
-        dv_i[qd1_i-1] += -jpi_qd*(-3/(2*inj_denom_htl)+1)
-        dv_ip1[qd1_i-1] += -3*jpi_qd/(2*inj_denom_htl) + mu_E*p_qd1*p_htl
-        defp_i[qd1_i-1] += -jpi_qd
-        defp_ip1[qd1_i-1] += mu_E*p_htl*p_qd1
-        #print("p_htl = ",p_htl,", p_qd1 = ",p_qd1," (",p_qd1/sys.qd_density,") p_qd2 = ",p_qd2," (",p_qd2/sys.qd_density,")")
-        #print("htl dv_i",  dv_i[qd1_i-1], ', dv_ip1 ', dv_ip1[qd1_i-1], " defp_i  ", defp_i[qd1_i-1], " defp_ip1  ", defp_ip1[qd1_i-1], ", (",dphi,")")#'''
-        #print("   p_htl = ", p_htl," p_qd1 = ", p_qd1," p_qd2 = ", p_qd2)
-        #print("qd2 dv_i",  dv_i[qd2_i], ', dv_ip1 ', dv_ip1[qd2_i], " defn_i  ", defp_i[qd1_i], " defn_ip1  ", defp_ip1[qd1_i], ", (",dphi,")")#'''
+        # HTL -> first QD hole capture link.
+        dv_i[htl_link] += -jpi_qd * (-3 / (2 * inj_denom_htl) + 1)
+        dv_ip1[htl_link] += -3 * jpi_qd / (2 * inj_denom_htl) + mu_E * p_qd[0] * p_htl
+        defp_i[htl_link] += -jpi_qd
+        defp_ip1[htl_link] += mu_E * p_htl * p_qd[0]
+
 
 
     return defp_i, defp_ip1, dv_i, dv_ip1

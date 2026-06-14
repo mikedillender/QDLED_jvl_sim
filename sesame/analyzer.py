@@ -11,15 +11,16 @@ from .defects import defectsF
 
 try:
     import matplotlib.pyplot as plt
+
     mpl_enabled = True
     try:
         from mpl_toolkits import mplot3d
+
         has3d = True
     except:
         has3d = False
 except:
     mpl_enabled = False
-
 
 
 class Analyzer():
@@ -55,7 +56,7 @@ class Analyzer():
             self.efp = 0 * self.v
 
         # sites of the system
-        self.sites = np.arange(sys.nx*sys.ny, dtype=int)
+        self.sites = np.arange(sys.nx * sys.ny, dtype=int)
 
     @staticmethod
     def line(system, p1, p2):
@@ -103,14 +104,14 @@ class Analyzer():
             diagram.
 
         fig: Maplotlib figure
-            A plot is added to it if given. If not given, a new one is created and 
+            A plot is added to it if given. If not given, a new one is created and
             displayed.
 
         """
         p1, p2 = location
         if self.sys.dimension == 1:
-            idx1, _ = get_indices(self.sys, (p1[0],0,0))
-            idx2, _ = get_indices(self.sys, (p2[0],0,0))
+            idx1, _ = get_indices(self.sys, (p1[0], 0, 0))
+            idx2, _ = get_indices(self.sys, (p2[0], 0, 0))
             X = self.sys.xpts[idx1:idx2]
             sites = np.arange(idx1, idx2, 1, dtype=int)
         if self.sys.dimension == 2:
@@ -126,75 +127,73 @@ class Analyzer():
 
         X = X * 1e7  # in um
         vt = self.sys.scaling.energy
-        l1, = ax.plot(X, vt*self.efn[sites], lw=2, color='#2e89cf', ls='--')
-        l2, = ax.plot(X, vt*self.efp[sites], lw=2, color='#cf392e', ls='--')
+        l1, = ax.plot(X, vt * self.efn[sites], lw=2, color='#2e89cf', ls='--')
+        l2, = ax.plot(X, vt * self.efp[sites], lw=2, color='#cf392e', ls='--')
         l3, = ax.plot(X, -vt * (self.v[sites] + self.sys.bl[sites]), lw=2, color='k', ls='-')
         l4, = ax.plot(X, -vt * (self.v[sites] + self.sys.bl[sites] + self.sys.Eg[sites]), lw=2, color='k', ls='-')
-        #print("chi :")
-        #print(self.sys.bl[sites]*vt)
-        #fig.legend([l1, l2], [r'$\mathregular{E_{F_n}}$',\
+        # print("chi :")
+        # print(self.sys.bl[sites]*vt)
+        # fig.legend([l1, l2], [r'$\mathregular{E_{F_n}}$',\
         #                      r'$\mathregular{E_{F_p}}$'])
 
-
-        #ax.set_xlabel(r'Position [$\mathregular{nm}$]')
+        # ax.set_xlabel(r'Position [$\mathregular{nm}$]')
         ax.set_ylabel('Energy [eV]')
 
-        #if show:
+        # if show:
         #    plt.show()
 
     def saveCSV(self):
-        X0 = self.sys.xpts#*1e7
-        #vt = self.sys.scaling.energy
-        V=self.v#*vt
-        Ev=-self.sys.bl-self.sys.Eg#*vt
-        Nv=np.log(self.sys.Nv)
-        efp=self.efp#*self.sys.scaling.energy
-        stacked=np.stack((X0,V,Ev,Nv,efp),axis=0)
+        X0 = self.sys.xpts  # *1e7
+        # vt = self.sys.scaling.energy
+        V = self.v  # *vt
+        Ev = -self.sys.bl - self.sys.Eg  # *vt
+        Nv = np.log(self.sys.Nv)
+        efp = self.efp  # *self.sys.scaling.energy
+        stacked = np.stack((X0, V, Ev, Nv, efp), axis=0)
         np.savetxt("p_data.csv", stacked, delimiter=",", fmt="%.10f")
 
     def field_diagram(self, fig=None):
 
         sites = self.sites
         X0 = self.sys.xpts
-        X1 = self.sys.xpts[:-1] + self.sys.dx*self.sys.scaling.length / 2
-        V=self.v*self.sys.scaling.energy
-        dv=V[1:]-V[:-1]
-        E=-dv/self.sys.dx
-        V=V-V[0]
+        X1 = self.sys.xpts[:-1] + self.sys.dx * self.sys.scaling.length / 2
+        V = self.v * self.sys.scaling.energy
+        dv = V[1:] - V[:-1]
+        E = -dv / self.sys.dx
+        V = V - V[0]
         show = False
         if fig is None:
             fig = plt.figure()
             show = True
 
-        borders_x=np.array([X0[self.sys.eml_sites[0]],X0[self.sys.eml_sites[0]],X0[self.sys.eml_sites[3]],X0[self.sys.eml_sites[3]]])
-        borders_y=1e6*np.array([-1,1,1,-1])
+        borders_x = np.array([X0[self.sys.eml_sites[0]], X0[self.sys.eml_sites[0]], X0[self.sys.eml_sites[3]],
+                              X0[self.sys.eml_sites[3]]])
+        borders_y = 1e6 * np.array([-1, 1, 1, -1])
 
         # add axis to figure
         ax = fig.add_subplot(234)
-        ax.plot(borders_x*1e7,borders_y, lw=1, color='#000000', ls='--')
-        l1, = ax.plot(X0*1e7,V, lw=2, color='#2e89cf', ls='-')
-        ax.set_ylim(min(V)-.1,max(V)+.1)
+        ax.plot(borders_x * 1e7, borders_y, lw=1, color='#000000', ls='--')
+        l1, = ax.plot(X0 * 1e7, V, lw=2, color='#2e89cf', ls='-')
+        ax.set_ylim(min(V) - .1, max(V) + .1)
         ax.set_title(r'$\mathregular{V(x)}$')
         ax.set_xlabel(r'Position [$\mathregular{nm}$]')
 
         ax = fig.add_subplot(235)
-        ax.plot(borders_x*1e7,borders_y, lw=1, color='#000000', ls='--')
-        l2, = ax.plot(X1*1e7,E, lw=2, color='#2e89cf', ls='-')
-        ax.set_ylim(min(E)-.01,max(E)+.01)
+        ax.plot(borders_x * 1e7, borders_y, lw=1, color='#000000', ls='--')
+        l2, = ax.plot(X1 * 1e7, E, lw=2, color='#2e89cf', ls='-')
+        ax.set_ylim(min(E) - .01, max(E) + .01)
         ax.set_title(r'$\mathregular{E(x)}$')
         ax.set_xlabel(r'Position [$\mathregular{nm}$]')
-
 
         ax = fig.add_subplot(236)
         p = self.hole_density()
         n = self.electron_density()
         rho = self.sys.rho - n + p
-        ax.plot(borders_x*1e7,borders_y, lw=1, color='#000000', ls='--')
-        l3, = ax.plot(X0*1e7,rho, lw=2, color='#cf392e', ls='-')
-        ax.set_ylim(min(rho)-.01,max(rho)+.01)
+        ax.plot(borders_x * 1e7, borders_y, lw=1, color='#000000', ls='--')
+        l3, = ax.plot(X0 * 1e7, rho, lw=2, color='#cf392e', ls='-')
+        ax.set_ylim(min(rho) - .01, max(rho) + .01)
         ax.set_title(r'$\mathregular{\rho(x)}$')
         ax.set_xlabel(r'Position [$\mathregular{nm}$]')
-
 
         if show:
             plt.show()
@@ -204,7 +203,7 @@ class Analyzer():
         sites = self.sites[1:-2].flatten()
         dx = self.sys.dx[sites]
         X0 = self.sys.xpts[sites]
-        X1 = X0+(dx/2)*self.sys.scaling.length
+        X1 = X0 + (dx / 2) * self.sys.scaling.length
 
         show = False
         if fig is None:
@@ -218,16 +217,15 @@ class Analyzer():
 
         p1 = self.sys.scaling.current * get_jp(self.sys, self.efp, self.v, sites, sites + 1, dx)
         n1 = self.sys.scaling.current * get_jn(self.sys, self.efn, self.v, sites, sites + 1, dx)
-        #print(n1)
-        #print(p1)
-        #print("current^")
+        # print(n1)
+        # print(p1)
+        # print("current^")
         l1, = ax.plot(X, (n1), lw=2, color='#2e89cf', ls='-')
         l2, = ax.plot(X, (p1), lw=2, color='#cf392e', ls='-')
 
         fig.legend([l1, l2], [r'$\mathregular{n}$', r'$\mathregular{p}$'])
 
         ax.set_xlabel(r'Position [$\mathregular{nm}$]')
-
 
         if show:
             plt.show()
@@ -241,7 +239,7 @@ class Analyzer():
         location: array-like ((x1,y1), (x2,y2))
             Tuple of two points defining a line over which to compute the electron
             density.
-        
+
         Returns
         -------
         n: numpy array of floats
@@ -268,7 +266,7 @@ class Analyzer():
         location: array-like ((x1,y1), (x2,y2))
             Tuple of two points defining a line over which to compute the hole
             density.
-        
+
         Returns
         -------
         p: numpy array of floats
@@ -287,15 +285,15 @@ class Analyzer():
         return p
 
     def total_charge(self):
-        dx=self.sys.dx
-        L=(dx[0:-2]+dx[1:-1])/2
+        dx = self.sys.dx
+        L = (dx[0:-2] + dx[1:-1]) / 2
         p = self.hole_density()
         n = self.electron_density()
         rho = self.sys.rho - n + p
-        print(len(L),len(rho))
-        trho=L*rho[1:-2]
-        net=trho.sum()
-        tot=abs(trho).sum()
+        print(len(L), len(rho))
+        trho = L * rho[1:-2]
+        net = trho.sum()
+        tot = abs(trho).sum()
         return [net, tot]
 
     def total_charge2(self):
@@ -308,19 +306,21 @@ class Analyzer():
         n = L * n[1:-2]
         p = L * p[1:-2]
         rho1 = L * self.sys.rho[1:-2]
-        space1=nrho[ np.logical_and(rho1>0, abs(rho1)>n)].sum()-nrho[np.logical_and(rho1+p<0 , rho1<0)].sum()
-        carriers=nrho[np.logical_and(rho1>0, abs(rho1)<n)].sum()-nrho[np.logical_and(rho1+p>0 , rho1<0)].sum()+nrho[rho1==0].sum()
-        #trho = L * rho[1:-2]
-        #net = trho.sum()
-        #tot = abs(trho).sum()
+        space1 = nrho[np.logical_and(rho1 > 0, abs(rho1) > n)].sum() - nrho[
+            np.logical_and(rho1 + p < 0, rho1 < 0)].sum()
+        carriers = nrho[np.logical_and(rho1 > 0, abs(rho1) < n)].sum() - nrho[
+            np.logical_and(rho1 + p > 0, rho1 < 0)].sum() + nrho[rho1 == 0].sum()
+        # trho = L * rho[1:-2]
+        # net = trho.sum()
+        # tot = abs(trho).sum()
         return [space1, carriers]
 
     def carrier_densities(self, location, fig=None):
 
         sites = self.sites
-        X=self.sys.xpts[sites]
-        #print("sites",sites,len(sites))
-        #print("X",X,len(X))
+        X = self.sys.xpts[sites]
+        # print("sites",sites,len(sites))
+        # print("X",X,len(X))
 
         show = False
         if fig is None:
@@ -332,17 +332,17 @@ class Analyzer():
 
         X = X * 1e7  # in nm
 
-        p = self.sys.scaling.density*self.hole_density()
-        n = self.sys.scaling.density*self.electron_density()
-        rho=self.sys.scaling.density*self.sys.rho
-        l1, = ax.plot(X,np.log10(n), lw=2, color='#2e89cf', ls='-')
-        l2, = ax.plot(X,np.log10(p), lw=2, color='#cf392e', ls='-')
-        l3, = ax.plot(X,np.log10(np.abs(rho)+pow(10,-30)), lw=2,color='k', ls='--')
+        p = self.sys.scaling.density * self.hole_density()
+        n = self.sys.scaling.density * self.electron_density()
+        rho = self.sys.scaling.density * self.sys.rho
+        l1, = ax.plot(X, np.log10(n), lw=2, color='#2e89cf', ls='-')
+        l2, = ax.plot(X, np.log10(p), lw=2, color='#cf392e', ls='-')
+        l3, = ax.plot(X, np.log10(np.abs(rho) + pow(10, -30)), lw=2, color='k', ls='--')
         ax.set_ylim(ymin=10, ymax=20)
 
-        #fig.legend([l1, l2], [r'$\mathregular{n}$', r'$\mathregular{p}$'])
+        # fig.legend([l1, l2], [r'$\mathregular{n}$', r'$\mathregular{p}$'])
 
-        #ax.set_xlabel(r'Position [$\mathregular{nm}$]')
+        # ax.set_xlabel(r'Position [$\mathregular{nm}$]')
 
         if show:
             plt.show()
@@ -369,14 +369,14 @@ class Analyzer():
             _, sites = self.line(self.sys, p1, p2)
         p = get_p(self.sys, self.efp, self.v, sites)
 
-        ni2 = self.sys.ni[sites]**2
+        ni2 = self.sys.ni[sites] ** 2
         n1 = self.sys.n1[sites]
         p1 = self.sys.p1[sites]
         tau_h = self.sys.tau_h[sites]
         tau_e = self.sys.tau_e[sites]
         n = get_n(self.sys, self.efn, self.v, sites)
         p = get_p(self.sys, self.efp, self.v, sites)
-        r = (n*p - ni2)/(tau_h * (n+n1) + tau_e*(p+p1))
+        r = (n * p - ni2) / (tau_h * (n + n1) + tau_e * (p + p1))
         return r
 
     def auger_rr(self, location=None):
@@ -402,8 +402,8 @@ class Analyzer():
 
         n = get_n(self.sys, self.efn, self.v, sites)
         p = get_p(self.sys, self.efp, self.v, sites)
-        ni2 = self.sys.ni[sites]**2
-        r = self.sys.Cn[sites] * n * (n*p - ni2) + self.sys.Cp[sites] * p * (n*p - ni2)
+        ni2 = self.sys.ni[sites] ** 2
+        r = self.sys.Cn[sites] * n * (n * p - ni2) + self.sys.Cp[sites] * p * (n * p - ni2)
         return r
 
     def radiative_rr(self, location=None):
@@ -428,8 +428,8 @@ class Analyzer():
 
         n = get_n(self.sys, self.efn, self.v, sites)
         p = get_p(self.sys, self.efp, self.v, sites)
-        ni2 = self.sys.ni[sites]**2
-        r = self.sys.B[sites] * (n*p - ni2)
+        ni2 = self.sys.ni[sites] ** 2
+        r = self.sys.B[sites] * (n * p - ni2)
         return r
 
     def defect_rr(self, defect):
@@ -452,12 +452,12 @@ class Analyzer():
         # Create arrays to pass to defectsF
         n = self.electron_density()
         p = self.hole_density()
-        rho = np.zeros_like(n) 
+        rho = np.zeros_like(n)
         r = np.zeros_like(n)
 
         # Update r (and rho but we don't use it)
         defectsF(self.sys, [defect], n, p, rho, r=r)
-        r = np.multiply(r[defect.sites],defect.perp_dl)
+        r = np.multiply(r[defect.sites], defect.perp_dl)
 
         return r
 
@@ -482,7 +482,6 @@ class Analyzer():
 
         return srh + radiative + auger + defects
 
-
     def electron_current(self, component='x', location=None):
         """
         Compute the electron current either by component (x or y) across the
@@ -505,18 +504,18 @@ class Analyzer():
         if location is not None:
             p1, p2 = location
             X, sites = self.line(self.sys, p1, p2)
-            jn = get_jn(self.sys, self.efn, self.v, sites[:-1], sites[1:], X[1:]-X[:-1])
+            jn = get_jn(self.sys, self.efn, self.v, sites[:-1], sites[1:], X[1:] - X[:-1])
         else:
             Nx, Ny = self.sys.nx, self.sys.ny
             sites = self.sites.reshape(Ny, Nx)
             if component == 'x':
-                sites = sites[:Ny, :Nx-1].flatten()
+                sites = sites[:Ny, :Nx - 1].flatten()
                 dx = np.tile(self.sys.dx, Ny)
-                jn = get_jn(self.sys, self.efn, self.v, sites, sites+1, dx)
+                jn = get_jn(self.sys, self.efn, self.v, sites, sites + 1, dx)
             if component == 'y':
-                sites = sites[:Ny-1, :Nx].flatten()
+                sites = sites[:Ny - 1, :Nx].flatten()
                 dy = np.repeat(self.sys.dy, Nx)
-                jn = get_jn(self.sys, self.efn, self.v, sites, sites+Nx, dy)
+                jn = get_jn(self.sys, self.efn, self.v, sites, sites + Nx, dy)
         return jn
 
     def hole_current(self, component='x', location=None):
@@ -541,18 +540,18 @@ class Analyzer():
         if location is not None:
             p1, p2 = location
             X, sites = self.line(self.sys, p1, p2)
-            jp = get_jp(self.sys, self.efp, self.v, sites[:-1], sites[1:], X[1:]-X[:-1])
+            jp = get_jp(self.sys, self.efp, self.v, sites[:-1], sites[1:], X[1:] - X[:-1])
         else:
             Nx, Ny = self.sys.nx, self.sys.ny
             sites = self.sites.reshape(Ny, Nx)
             if component == 'x':
-                sites = sites[:Ny, :Nx-1].flatten()
+                sites = sites[:Ny, :Nx - 1].flatten()
                 dx = np.tile(self.sys.dx, Ny)
-                jp = get_jp(self.sys, self.efp, self.v, sites, sites+1, dx)
+                jp = get_jp(self.sys, self.efp, self.v, sites, sites + 1, dx)
             if component == 'y':
-                sites = sites[:Ny-1, :Nx].flatten()
+                sites = sites[:Ny - 1, :Nx].flatten()
                 dy = np.repeat(self.sys.dy, Nx)
-                jp = get_jp(self.sys, self.efp, self.v, sites, sites+Nx, dy)
+                jp = get_jp(self.sys, self.efp, self.v, sites, sites + Nx, dy)
         return jp
 
     def electron_current_map(self, cmap='gnuplot', scale=1e4):
@@ -602,30 +601,30 @@ class Analyzer():
 
         x, y = self.sys.xpts[:-1], self.sys.ypts[:-1]
         nx, ny = len(x), len(y)
-        
-        s = np.asarray([i + j*self.sys.nx for j in range(self.sys.ny-1)\
-                                     for i in range(self.sys.nx-1)])
+
+        s = np.asarray([i + j * self.sys.nx for j in range(self.sys.ny - 1) \
+                        for i in range(self.sys.nx - 1)])
         dx = np.tile(self.sys.dx, ny)
         dy = np.repeat(self.sys.dy[:-1], nx)
 
         if electron:
-            Jx = get_jn(self.sys, self.efn, self.v, s, s+1, dx)
-            Jy = get_jn(self.sys, self.efn, self.v, s, s+(nx+1), dy)
+            Jx = get_jn(self.sys, self.efn, self.v, s, s + 1, dx)
+            Jy = get_jn(self.sys, self.efn, self.v, s, s + (nx + 1), dy)
             title = r'$\mathregular{J_{n}\ [mA\cdot cm^{-2}]}$'
         else:
-            Jx = get_jp(self.sys, self.efp, self.v, s, s+1, dx)
-            Jy = get_jp(self.sys, self.efp, self.v, s, s+(nx+1), dy)
+            Jx = get_jp(self.sys, self.efp, self.v, s, s + 1, dx)
+            Jy = get_jp(self.sys, self.efp, self.v, s, s + (nx + 1), dy)
             title = r'$\mathregular{J_{p}\ [mA\cdot cm^{-2}]}$'
 
         Jx = np.reshape(Jx, (ny, nx)) * self.sys.scaling.current * 1e3
         Jy = np.reshape(Jy, (ny, nx)) * self.sys.scaling.current * 1e3
 
-        jx = interp2d(x*scale, y*scale, Jx, kind='linear')
-        jy = interp2d(x*scale, y*scale, Jy, kind='linear')
+        jx = interp2d(x * scale, y * scale, Jx, kind='linear')
+        jy = interp2d(x * scale, y * scale, Jy, kind='linear')
 
         xx, yy = np.linspace(0, Lx, 100), np.linspace(0, Ly, 100)
         jnx, jny = jx(xx, yy), jy(xx, yy)
-        norm = np.sqrt(jnx**2 + jny**2)
+        norm = np.sqrt(jnx ** 2 + jny ** 2)
 
         y, x = np.mgrid[0:Ly:100j, 0:Lx:100j]
         p = ax.pcolor(x, y, norm, cmap=cmap, rasterized=True)
@@ -667,15 +666,14 @@ class Analyzer():
         nx, ny = len(xpts), len(ypts)
         data_xy = data.reshape(ny, nx).T
         X, Y = np.meshgrid(xpts, ypts)
-        fig = plt.figure(figsize=(8,6))
-        ax = fig.add_subplot(1,1,1, projection='3d')
+        fig = plt.figure(figsize=(8, 6))
+        ax = fig.add_subplot(1, 1, 1, projection='3d')
         Z = data_xy.T
-        ax.plot_surface(X, Y, Z,  cmap=cmap)
+        ax.plot_surface(X, Y, Z, cmap=cmap)
         ax.mouse_init(rotate_btn=1, zoom_btn=3)
         plt.xlabel('x')
         plt.ylabel('y')
         plt.show()
-
 
     def integrated_bulk_srh_recombination(self):
         """
@@ -739,7 +737,7 @@ class Analyzer():
         u = []
         for j in range(self.sys.ny):
             # List of sites
-            s = [i + j*self.sys.nx for i in range(self.sys.nx)]
+            s = [i + j * self.sys.nx for i in range(self.sys.nx)]
             sp = spline(x, r[s])
             u.append(sp.integral(x[0], x[-1]))
         if self.sys.ny == 1:
@@ -748,7 +746,7 @@ class Analyzer():
             sp = spline(y, u)
             JR = sp.integral(y[0], y[-1])
         return JR
-     
+
     def integrated_defect_recombination(self, defect):
         """
         Integrate the recombination along a defect in 2D.
@@ -774,7 +772,6 @@ class Analyzer():
 
         return JD
 
-
     def full_current(self):
         """
         Compute the steady state current in 1D and 2D.
@@ -786,14 +783,14 @@ class Analyzer():
         """
 
         # System number of sites
-        nx, ny= self.sys.nx, self.sys.ny
+        nx, ny = self.sys.nx, self.sys.ny
 
         # Define the sites between which computing the currents
-        sites_i = [nx//2 + j*nx  for j in range(ny)]
-        sites_ip1 = [nx//2+1+j*nx  for j in range(ny)]
+        sites_i = [nx // 2 + j * nx for j in range(ny)]
+        sites_ip1 = [nx // 2 + 1 + j * nx for j in range(ny)]
         # And the corresponding lattice dimensions
-        dl = self.sys.dx[self.sys.nx//2]
-        #print(sites_i)
+        dl = self.sys.dx[self.sys.nx // 2]
+        # print(sites_i)
 
         # Compute the electron and hole currents
         jn = get_jn(self.sys, self.efn, self.v, sites_i, sites_ip1, dl)
@@ -804,8 +801,7 @@ class Analyzer():
         if ny > 1:
             # Interpolate the results and integrate over the y-direction
             y = self.sys.ypts / self.sys.scaling.length
-            j = spline(y, jn+jp).integral(y[0], y[-1])
-
+            j = spline(y, jn + jp).integral(y[0], y[-1])
 
         return j
 

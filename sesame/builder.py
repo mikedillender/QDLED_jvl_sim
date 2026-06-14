@@ -124,35 +124,72 @@ class Builder():
     def add_acceptor(self, density, location=lambda pos: True):
         self.rho[np.where(location(self.xpts))[0]] -= density / self.scaling.density
 
-    def add_qd(self, t_s_nm, qd_mns=.19, qd_mps=.6, dEc=.28, dEv=.28, location=lambda pos: True, temp=300):
-        self.qd_sites = (np.where(location(self.xpts))[0])
+    def add_qd(self, t_s_nm, qd_mns=.19, qd_mps=.6, dEc=.28, dEv=.28,
+               location=lambda pos: True, temp=300, r_qd=None):
+        """Add a discretized quantum-dot layer.
+
+        Parameters
+        ----------
+        t_s_nm : float
+            QD shell thickness in nm, used in the tunneling probability.
+        qd_mns, qd_mps : float
+            Electron and hole effective masses in the QD shell.
+        dEc, dEv : float
+            Conduction- and valence-band offsets in eV for ETL->QD and
+            HTL->QD injection.
+        location : callable
+            Boolean mask selecting the QD center sites.
+        temp : float
+            Temperature in K for the thermal velocity.
+        r_qd : float, optional
+            Physical QD radius in cm. This is required when the mask selects a
+            single QD site. For multiple equally spaced QD sites it is inferred
+            as half the center-to-center spacing if not supplied.
+        """
+        self.qd_sites = np.asarray(np.where(location(self.xpts))[0], dtype=int)
+        if len(self.qd_sites) < 1:
+            raise ValueError('add_qd found no QD sites. Check the QD location mask.')
+        if not np.all(np.diff(self.qd_sites) == 1):
+            raise ValueError('QD sites must be consecutive mesh points. Build the mesh with the QD centers inserted as adjacent points.')
+
         # Store QD/transport-layer band offsets in eV. These enter the
         # JMK effective capture fields as E = -(dphi + dE/q)/r_qd.
         self.qd_dEc = dEc
         self.qd_dEv = dEv
-        self.eml_sites=[self.qd_sites[0]-1,self.qd_sites[0],self.qd_sites[1],self.qd_sites[1]+1]
-        self.rqd = (self.xpts[self.qd_sites[1]] - self.xpts[self.qd_sites[0]]) / 2
-        self.qd_links = self.qd_sites.copy()
-        self.qd_links = np.insert(self.qd_links, 0, self.qd_links[0] - 1)
+
+        if r_qd is None:
+            if len(self.qd_sites) < 2:
+                raise ValueError('add_qd requires r_qd when only one QD site is present.')
+            self.rqd = (self.xpts[self.qd_sites[1]] - self.xpts[self.qd_sites[0]]) / 2
+        else:
+            self.rqd = r_qd
+
+        # EML sites are the adjacent HTL surface site, all QD sites, and the
+        # adjacent ETL surface site. qd_links are the modified links spanning
+        # HTL/QD, QD/QD, ..., QD/ETL.
+        self.eml_sites = [self.qd_sites[0] - 1, *self.qd_sites.tolist(), self.qd_sites[-1] + 1]
+        self.qd_links = np.arange(self.qd_sites[0] - 1, self.qd_sites[-1] + 1, dtype=int)
+        self.qd_m = len(self.qd_sites)
+
         self.qd_density = 3 / ((self.rqd ** 3) * self.scaling.density * 4 * np.pi)
-        print("r_qd = ", self.rqd, ', sites ', self.qd_sites, ", links ", self.qd_links, ", density ", self.qd_density)
+        print("m_qd = ", self.qd_m, " | r_qd = ", self.rqd, ', sites ', self.qd_sites,
+              ", links ", self.qd_links, ", density ", self.qd_density)
+
         qd_mn, qd_mp = qd_mns, qd_mps
-        T_bn = np.exp(-10.246 * t_s_nm * np.sqrt(qd_mn * dEc))
-        T_bp = np.exp(-10.246 * t_s_nm * np.sqrt(qd_mp * dEv))
+        T_bn = np.exp(-10.246 * t_s_nm * np.sqrt(qd_mn * dEc)) if dEc >= 0 else 1.0
+        T_bp = np.exp(-10.246 * t_s_nm * np.sqrt(qd_mp * dEv)) if dEv >= 0 else 1.0
         vth_n = 5.505695e5 * np.sqrt(temp / qd_mn)
         vth_p = 5.505695e5 * np.sqrt(temp / qd_mp)
         print("vth_n = ", f"{vth_n:.2e}", ', vth_p = ', f"{vth_p:.2e}")
         self.qd_vd_n = vth_n * T_bn / (4 * self.rqd)
         self.qd_vd_p = vth_p * T_bp / (4 * self.rqd)
-        print("T_bn = ", f"{T_bn:.2e}", ', T_bp = ',f"{T_bp:.2e}", ", vd_n = ", f"{self.qd_vd_n:.2e}", ", vd_p = ", f"{self.qd_vd_p:.2e}")
+        print("T_bn = ", f"{T_bn:.2e}", ', T_bp = ', f"{T_bp:.2e}",
+              ", vd_n = ", f"{self.qd_vd_n:.2e}", ", vd_p = ", f"{self.qd_vd_p:.2e}")
         self.qd_alpha_n = 0.5 * T_bn * (0.000001)
         self.qd_alpha_p = 0.5 * T_bp * (0.000001)
         print("alpha_n = ", self.qd_alpha_n, ', alpha_p = ', self.qd_alpha_p)
-        self.has_qd=True
+        self.has_qd = True
         self.set_qd_poisson_widths()
-
-        # print(self.xpts[self.qd_sites[0]-1:self.qd_sites[1]+4])
-        # print(self.xpts[self.qd_sites])
 
     def set_qd_poisson_widths(self):
         """Set finite-volume charge widths used by Poisson's equation.
@@ -173,8 +210,8 @@ class Builder():
         x = self.xpts / self.scaling.length
         n_sites = len(x)
 
-        if not hasattr(self, 'qd_sites') or len(self.qd_sites) < 2:
-            raise ValueError('set_qd_poisson_widths requires at least two QD sites.')
+        if not hasattr(self, 'qd_sites') or len(self.qd_sites) < 1:
+            raise ValueError('set_qd_poisson_widths requires at least one QD site.')
 
         w = np.zeros(n_sites, dtype=float)
         w[1:-1] = 0.5 * (x[2:] - x[:-2])
@@ -202,7 +239,7 @@ class Builder():
 
         # QD-site charge volumes: first/last QD cells are bounded by the physical
         # QD-layer interfaces, while interior QD cells use midpoints between QD
-        # centers. For the current two-QD model, each QD site owns one QD diameter.
+        # centers. For m=1, the single QD owns one QD diameter.
         for k, qi in enumerate(qd_sites):
             left = x_left_qdl if k == 0 else 0.5 * (x[qd_sites[k - 1]] + x[qi])
             right = x_right_qdl if k == len(qd_sites) - 1 else 0.5 * (x[qi] + x[qd_sites[k + 1]])
