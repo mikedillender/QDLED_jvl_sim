@@ -494,10 +494,10 @@ class Solver():
         # emissive current. J and Jem are dimensionless current-equivalents;
         # multiply both by system.scaling.current to convert to A/cm^2.
         J = np.zeros((len(Vapp),))
-        L = np.zeros((len(Vapp),))
+        EQE = np.zeros((len(Vapp),))
         Jem = np.zeros((len(Vapp),))
         J[:] = np.nan
-        L[:] = np.nan
+        EQE[:] = np.nan
         Jem[:] = np.nan
         r1 = result.copy()
 
@@ -523,7 +523,7 @@ class Solver():
             if result is None:
                 logging.info("The solver failed to converge for the applied voltage"
                              + " {0} V (index {1}).".format(voltages[idx], idx))
-                return J, L, Jem
+                return J, EQE, Jem
 
             drv = result['v'] - r1['v']
             drfn = result['efn'] - r1['efn']
@@ -542,7 +542,7 @@ class Solver():
                 try:
                     az = Analyzer(system, result)
                     J[idx] = az.full_current()
-                    L[idx] = az.full_emission()
+                    EQE[idx] = az.full_emission()
                     Jem[idx] = az.full_emissive_current()
                     r1 = result.copy()
                     logging.info(
@@ -550,7 +550,7 @@ class Solver():
                             voltages[idx],
                             system.scaling.current * J[idx],
                             system.scaling.current * Jem[idx],
-                            L[idx],
+                            EQE[idx],
                         )
                     )
                 except Exception:
@@ -560,9 +560,9 @@ class Solver():
             else:
                 logging.info("The solver failed to converge for the applied voltage" \
                              + " {0} V (index {1}).".format(voltages[idx], idx))
-                return J, L, Jem
+                return J, EQE, Jem
                 break
-        return J, L, Jem
+        return J, EQE, Jem
 
 
 default = Solver()

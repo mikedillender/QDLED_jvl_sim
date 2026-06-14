@@ -2,9 +2,9 @@ import os
 import sesame
 import numpy as np
 import matplotlib.pyplot as plt
-folder="low_WFa"
+folder="compare_m_qd/m2"
 f_name="1dQD_V_"
-num_files=105
+num_files=99
 step=1
 n=int(np.floor(num_files/step))+1
 pcharge=np.zeros(n)

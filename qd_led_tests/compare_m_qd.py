@@ -25,8 +25,8 @@ def first_crossing(v, y, threshold):
 
 
 def plot_current_and_emission(results, export_root):
-    fig, ax = plt.subplots()
-    ax2 = ax.twinx()
+    fig, ax = plt.subplots(figsize=(4, 3))
+    #ax2 = ax.twinx()
 
     lines = []
     labels = []
@@ -41,7 +41,8 @@ def plot_current_and_emission(results, export_root):
     ax.set_xlabel('Voltage [V]')
     ax.set_ylabel('Total current [A/cm$^2$]')
     ax.set_yscale('log')
-    ax.set_ylim(1e-12, 1)
+    ax.set_ylim(1e-6, 1)
+    ax.set_xlim(2,8)
     ax.grid(True)
 
     #ax2.set_ylabel('Emissive current [A/cm$^2$]')
@@ -56,24 +57,25 @@ def plot_current_and_emission(results, export_root):
 
 
 def plot_eqe(results, export_root):
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(4, 3))
     for m_qd, result in results.items():
         ax.plot(result['v'], result['eqe'], '-o', markersize=3, label=f"m = {m_qd}")
     ax.set_xlabel('Voltage [V]')
     ax.set_ylabel('EQE')
     ax.grid(True)
+    ax.set_xlim(2,8)
     ax.legend()
     fig.tight_layout()
     fig.savefig(os.path.join(export_root, 'eqe_vs_voltage_m_compare.png'), dpi=300)
 
 
 def main():
-    voltages = np.linspace(0, 6, 120)
+    voltages = np.linspace(0, 8, 150)
     export_root = 'compare_symmetric_m'
     os.makedirs(export_root, exist_ok=True)
 
     results = {}
-    for m_qd in (1, 2, 3):
+    for m_qd in (1, 2, 3, 4):
         _, result = run_iv(m_qd=m_qd, voltages=voltages, export_root=export_root)
         results[m_qd] = result
 

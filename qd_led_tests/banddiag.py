@@ -2,7 +2,7 @@ import sesame
 import numpy as np
 import matplotlib.pyplot as plt
 #sys, result = sesame.load_sim('qd_small/1dQD_V_226.gzip')
-sys, result = sesame.load_sim('paperlike_variable_m/m2/1dQD_V_200.gzip')
+sys, result = sesame.load_sim('compare_symmetric_m/m2/1dQD_V_55.gzip')
 az = sesame.Analyzer(sys,result)
 p1 = (0,0)
 p2 = (150e-7,0)

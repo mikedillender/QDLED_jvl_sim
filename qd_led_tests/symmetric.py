@@ -38,13 +38,11 @@ def build_system(m_qd=2):
     # only by its discrete center sites.
     x = np.concatenate((
         np.linspace(0, dd, 20, endpoint=False),
-        np.linspace(dd, t_hil - dd2, 30, endpoint=False),
-        np.linspace(t_hil - dd2, t_hil + dd2, 20, endpoint=False),
-        np.linspace(t_hil + dd2, t_bqd - dd, 30, endpoint=False),
-        np.linspace(t_bqd - dd, t_bqd, 20, endpoint=False),
+        np.linspace(dd, t_bqd - dd, 70, endpoint=False),
+        np.linspace(t_bqd - dd, t_bqd, 40, endpoint=False),
         qd_centers,
-        np.linspace(t_aqd, t_aqd + dd, 20, endpoint=False),
-        np.linspace(t_aqd + dd, t_total - dd, 30, endpoint=False),
+        np.linspace(t_aqd, t_aqd + dd, 40, endpoint=False),
+        np.linspace(t_aqd + dd, t_total - dd, 60, endpoint=False),
         np.linspace(t_total - dd, t_total, 20),
     ))
 
@@ -54,16 +52,16 @@ def build_system(m_qd=2):
     qd_mns, qd_mps = 0.19, 0.60
 
     htl = {
-        'Nc': 2.5e19, 'Nv': 2.5e19, 'Eg': 3, 'epsilon': 5, 'Et': 0,
+        'Nc': 2.5e19, 'Nv': 2.5e19, 'Eg': 3, 'epsilon': 3.5, 'Et': 0,
         'mu_e': 0.002, 'mu_h': 0.002, 'tau_e': 1.2e-6, 'tau_h': 1.2e-6,
         'affinity': 2.4,
     }
     qdc = {
         'Nc': 2.5e19 * pow(qd_mnc, 1.5),
         'Nv': 2.5e19 * pow(qd_mpc, 1.5),
-        'Eg': 2.28, 'epsilon': 8, 'Et': 0,
+        'Eg': 2.28, 'epsilon': 9.4, 'Et': 0,
         'mu_e': 1e-6, 'mu_h': 1e-6, 'tau_e': 1.2e-6, 'tau_h': 1.2e-6,
-        'affinity': 3.66, 'Cn': 1.5e-31, 'Cp': 1.5e-31, 'B': 0.5e-12,
+        'affinity': 3.66, 'Cn': 4e-31, 'Cp': 4e-31, 'B': 0.58e-12,
     }
     etl = {
         'Nc': 2.5e19 * pow(0.24, 1.5),
