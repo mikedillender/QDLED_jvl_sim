@@ -22,7 +22,7 @@ dd = 4e-7   # 2*dd is the distance over which mesh is refined
 dd2 = 1.5e-7
 # Define the mesh
 x = np.concatenate((np.linspace(0, dd, 30, endpoint=False),                        # L contact interface
-                    np.linspace(dd, t_hil-dd2, 20, endpoint=False),                    # material 1
+                    np.linspace(dd, t_hil-dd2, 40, endpoint=False),                    # material 1
                     np.linspace(t_hil - dd2, t_hil + dd2, 20, endpoint=False),             # interface 1
                     np.linspace(t_hil + dd2, (t_bqd) - dd, 40, endpoint=False),       # material 2
                     np.linspace((t_bqd) - dd, (t_bqd), 20, endpoint=False),      # htl-qd interface
@@ -107,7 +107,7 @@ voltages=np.linspace(0,5,300)
 # Perform I-V calculation
 export_folder="qd_small"
 os.makedirs(export_folder, exist_ok=True)
-j,l = sesame.IVcurve(sys, voltages, export_folder+"/1dQD_V",tol=1e-5,htp=1,maxiter=600)
+j,l = sesame.IVcurve(sys, voltages, export_folder+"/1dQD_V",tol=1e-5,htp=1,maxiter=1000)
 j = j * sys.scaling.current
 
 result = {'v':voltages, 'j':j}

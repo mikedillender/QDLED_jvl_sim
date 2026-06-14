@@ -145,9 +145,70 @@ class Builder():
         self.qd_alpha_p = 0.5 * T_bp * (0.000001)
         print("alpha_n = ", self.qd_alpha_n, ', alpha_p = ', self.qd_alpha_p)
         self.has_qd=True
+        self.set_qd_poisson_widths()
 
         # print(self.xpts[self.qd_sites[0]-1:self.qd_sites[1]+4])
         # print(self.xpts[self.qd_sites])
+
+    def set_qd_poisson_widths(self):
+        """Set finite-volume charge widths used by Poisson's equation.
+
+        Sesame's standard 1D Poisson residual divides the electric-displacement
+        flux imbalance by the midpoint-to-midpoint control-volume width and then
+        subtracts the local charge density. That is equivalent to assuming the
+        local charge density fills the full midpoint-to-midpoint volume around
+        every site. For discretized QDs this is not correct at the HTL/QD and
+        QD/ETL boundaries: the adjacent transport-layer surface sites should not
+        contribute charge inside the QD layer.
+
+        This array stores the *physical* charge-control-volume width for each
+        site, in the same scaled length units as ``self.dx``. getF.py and
+        jacobian.py multiply the local charge term and its derivatives by
+        ``poisson_charge_width / dxbar``. Away from QDs this ratio is one.
+        """
+        x = self.xpts / self.scaling.length
+        n_sites = len(x)
+
+        if not hasattr(self, 'qd_sites') or len(self.qd_sites) < 2:
+            raise ValueError('set_qd_poisson_widths requires at least two QD sites.')
+
+        w = np.zeros(n_sites, dtype=float)
+        w[1:-1] = 0.5 * (x[2:] - x[:-2])
+        w[0] = 0.5 * (x[1] - x[0])
+        w[-1] = 0.5 * (x[-1] - x[-2])
+
+        qd_sites = np.asarray(self.qd_sites, dtype=int)
+        q0 = qd_sites[0]
+        qN = qd_sites[-1]
+        htl_surf = q0 - 1
+        etl_surf = qN + 1
+
+        if htl_surf < 1 or etl_surf > n_sites - 2:
+            raise ValueError('QD sites must have neighboring transport-layer sites on both sides.')
+
+        rqd_scaled = self.rqd / self.scaling.length
+        x_left_qdl = x[q0] - rqd_scaled
+        x_right_qdl = x[qN] + rqd_scaled
+
+        # Clip the adjacent transport-layer charge volumes at the physical QD
+        # layer boundaries. This prevents HTL/ETL density from being integrated
+        # halfway into the QD layer by the default midpoint rule.
+        w[htl_surf] = x_left_qdl - 0.5 * (x[htl_surf - 1] + x[htl_surf])
+        w[etl_surf] = 0.5 * (x[etl_surf] + x[etl_surf + 1]) - x_right_qdl
+
+        # QD-site charge volumes: first/last QD cells are bounded by the physical
+        # QD-layer interfaces, while interior QD cells use midpoints between QD
+        # centers. For the current two-QD model, each QD site owns one QD diameter.
+        for k, qi in enumerate(qd_sites):
+            left = x_left_qdl if k == 0 else 0.5 * (x[qd_sites[k - 1]] + x[qi])
+            right = x_right_qdl if k == len(qd_sites) - 1 else 0.5 * (x[qi] + x[qd_sites[k + 1]])
+            w[qi] = right - left
+
+        special = [htl_surf, *qd_sites.tolist(), etl_surf]
+        if np.any(w[special] <= 0):
+            raise ValueError('Non-positive Poisson charge width detected at the QD interfaces.')
+
+        self.poisson_charge_width = w
 
     def contact_S(self, Scn_left, Scp_left, Scn_right, Scp_right):
         v = self.scaling.velocity

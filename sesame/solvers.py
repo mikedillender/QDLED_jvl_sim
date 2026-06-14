@@ -18,6 +18,7 @@ from .getF import getF
 from .jacobian import getJ
 
 import logging
+
 logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s')
 logging.getLogger('matplotlib.font_manager').disabled = True
 logging.getLogger('matplotlib').setLevel(logging.ERROR)
@@ -28,11 +29,13 @@ __all__ = ['solve', 'IVcurve']
 mumps_available = False
 try:
     from . import mumps
+
     mumps_available = True
 except:
     pass
-print("mumps available = ",mumps_available)
-        
+print("mumps available = ", mumps_available)
+
+
 class NewtonError(Exception):
     pass
 
@@ -43,13 +46,14 @@ class SparseSolverError(Exception):
 
 class BCsError(Exception):
     def __init__(self, BCs):
-        msg = "\n*********************************************" +\
-              "\n*  Unknown contacts boundary conditions     *" +\
+        msg = "\n*********************************************" + \
+              "\n*  Unknown contacts boundary conditions     *" + \
               "\n*********************************************"
         logging.error(msg)
-        logging.error("Contacts boundary conditions: '{0}' is different from 'Ohmic', 'Schottky', or 'Neumann'.\n".format(BCs))
+        logging.error(
+            "Contacts boundary conditions: '{0}' is different from 'Ohmic', 'Schottky', or 'Neumann'.\n".format(BCs))
 
- 
+
 class Solver():
     """
     An object that creates an interface for the equilibrium and nonequilibrium
@@ -71,16 +75,16 @@ class Solver():
     def __init__(self, use_mumps=True):
         self.equilibrium = None
         self.use_mumps = use_mumps
-    
+
     def make_guess(self, system):
         # Make a linear assumption based on Dirichlet contacts
         nx = system.nx
         # determine what the potential on the left might be
         if system.contacts_bcs[0] == 'Ohmic' or system.contacts_bcs[0] == 'Neutral':
-            if system.rho[0] < 0: # p-doped
-                v_left = -system.Eg[0] - np.log(abs(system.rho[0])/system.Nv[0]) - system.bl[0]
-            else: # n-doped
-                v_left = np.log(system.rho[0]/system.Nc[0]) - system.bl[0]
+            if system.rho[0] < 0:  # p-doped
+                v_left = -system.Eg[0] - np.log(abs(system.rho[0]) / system.Nv[0]) - system.bl[0]
+            else:  # n-doped
+                v_left = np.log(system.rho[0] / system.Nc[0]) - system.bl[0]
         if system.contacts_bcs[0] == 'Schottky':
             v_left = -system.contacts_WF[0] / system.scaling.energy
 
@@ -89,10 +93,10 @@ class Solver():
 
         # determine what the potential on the right might be
         if system.contacts_bcs[1] == 'Ohmic' or system.contacts_bcs[1] == 'Neutral':
-            if system.rho[nx-1] < 0:
-                v_right = -system.Eg[nx-1] - np.log(abs(system.rho[nx-1])/system.Nv[nx-1]) - system.bl[nx-1]
+            if system.rho[nx - 1] < 0:
+                v_right = -system.Eg[nx - 1] - np.log(abs(system.rho[nx - 1]) / system.Nv[nx - 1]) - system.bl[nx - 1]
             else:
-                v_right = np.log(system.rho[nx-1]/system.Nc[nx-1]) - system.bl[nx-1]
+                v_right = np.log(system.rho[nx - 1] / system.Nc[nx - 1]) - system.bl[nx - 1]
         if system.contacts_bcs[1] == 'Schottky':
             v_right = -system.contacts_WF[1] / system.scaling.energy
         if system.contacts_bcs[1] == 'cam':
@@ -105,7 +109,7 @@ class Solver():
             v = np.tile(v, system.ny)
         return v
 
-    def solve(self, system,  compute='all', guess=None, tol=1e-6, periodic_bcs=True,\
+    def solve(self, system, compute='all', guess=None, tol=1e-6, periodic_bcs=True, \
               maxiter=300, verbose=True, htp=1):
         """
         Solve the drift diffusion Poisson equation on a given discretized
@@ -148,8 +152,8 @@ class Solver():
         """
 
         # Check if we only want the electrostatic potential
-        if compute == 'Poisson': # Only Poisson is solved
-            self.equilibrium = None # delete it to force its computation
+        if compute == 'Poisson':  # Only Poisson is solved
+            self.equilibrium = None  # delete it to force its computation
 
         if self.equilibrium is None:
             if verbose == True:
@@ -163,24 +167,24 @@ class Solver():
                     guess = guess['v']
 
             # Compute the potential (Newton returns an array)
-            self.equilibrium = self._newton(system, guess, tol=tol,\
-                              periodic_bcs=periodic_bcs,\
-                              maxiter=maxiter, verbose=verbose, htp=htp)
+            self.equilibrium = self._newton(system, guess, tol=tol, \
+                                            periodic_bcs=periodic_bcs, \
+                                            maxiter=maxiter, verbose=verbose, htp=htp)
 
             if self.equilibrium is None:
                 return None
-        #print(guess['v'])
+        # print(guess['v'])
         # Return now if the electrostatic potential is all we wanted
         if compute == 'Poisson':
             efn = np.zeros_like(self.equilibrium)
             efp = np.zeros_like(self.equilibrium)
-            return {'efn': efn, 'efp':efp, 'v':np.copy(self.equilibrium)}
+            return {'efn': efn, 'efp': efp, 'v': np.copy(self.equilibrium)}
 
         # Otherwise, keep going with the full problem
         if compute == 'all':
             # array to pass to Newton routine
-            x = np.zeros((3*system.nx*system.ny,), dtype=np.float64)
-            if guess is None: # I will try with equilibrium
+            x = np.zeros((3 * system.nx * system.ny,), dtype=np.float64)
+            if guess is None:  # I will try with equilibrium
                 x[2::3] = np.copy(self.equilibrium)
             else:
                 x[0::3] = guess['efn']
@@ -199,7 +203,7 @@ class Solver():
             plt.title("initial equilibrium condition")
             plt.show()'''
             # Compute solution (Newton returns an array)
-            x = self._newton(system, x, tol=tol, periodic_bcs=periodic_bcs,\
+            x = self._newton(system, x, tol=tol, periodic_bcs=periodic_bcs, \
                              maxiter=maxiter, verbose=verbose, htp=htp)
 
             if x is not None:
@@ -207,34 +211,31 @@ class Solver():
             else:
                 return None
 
-
     def _damping(self, dx):
         # This damping procedure is inspired from Solid-State Electronics, vol. 19,
         # pp. 991-992 (1976).
 
         b = np.abs(dx) > 1
-        dx[b] = np.log(1+np.abs(dx[b])*1.72)*np.sign(dx[b])
-
+        dx[b] = np.log(1 + np.abs(dx[b]) * 1.72) * np.sign(dx[b])
 
     def _sparse_solver(self, J, f):
         spsolve = lg.spsolve
-        #print("f: ",len(f))
-        #print("J: ",J.shape)
-        #print(type(J))
+        # print("f: ",len(f))
+        # print("J: ",J.shape)
+        # print(type(J))
         if self.use_mumps and mumps_available:
-            #print("using mumps")
+            # print("using mumps")
             spsolve = mumps.spsolve
         else:
             J = J.tocsr()
-        #print("J: ",J)
-        #print("F: ",f)
+        # print("J: ",J)
+        # print("F: ",f)
         dx = spsolve(J, f)
         return dx
 
-
     def _get_system(self, x, system, periodic_bcs):
         # Compute the right hand side of J * x = f
-        if self.equilibrium is None: # this is where the guess comes from i think
+        if self.equilibrium is None:  # this is where the guess comes from i think
             size = system.nx * system.ny
             f, rows, columns, data = getFandJ_eq(system, x)
         else:
@@ -249,14 +250,13 @@ class Solver():
 
         return f, J
 
-
     def _newton(self, system, x, tol=1e-6, periodic_bcs=True, maxiter=300, verbose=True, htp=1):
 
-        htpy = np.linspace(1./htp, 1, htp)
+        htpy = np.linspace(1. / htp, 1, htp)
 
         for gdx, gamma in enumerate(htpy):
             if verbose:
-                logging.info("Newton loop {0}/{1}".format(gdx+1, htp))
+                logging.info("Newton loop {0}/{1}".format(gdx + 1, htp))
 
             if gamma < 1:
                 htol = 1
@@ -273,22 +273,22 @@ class Solver():
 
                 if cc == 100:
                     print("try decreasing voltage :D")
-                    if(x[system.qd_sites[0]*3+2]>x[(system.qd_sites[0]-1)*3+2]):
-                        x[system.qd_sites[0]*3+2]-=1
+                    if (x[system.qd_sites[0] * 3 + 2] > x[(system.qd_sites[0] - 1) * 3 + 2]):
+                        x[system.qd_sites[0] * 3 + 2] -= 1
                 if cc == 101:
-                    if(x[system.qd_sites[1]*3+2]>x[(system.qd_sites[0])*3+2]):
-                        x[system.qd_sites[1]*3+2]-=2
+                    if (x[system.qd_sites[1] * 3 + 2] > x[(system.qd_sites[0]) * 3 + 2]):
+                        x[system.qd_sites[1] * 3 + 2] -= 2
                 if cc == 102:
-                    if(x[(system.qd_sites[1]+1)*3+2]>x[(system.qd_sites[1])*3+2]):
-                        x[(system.qd_sites[1]+1)*3+2]-=3
+                    if (x[(system.qd_sites[1] + 1) * 3 + 2] > x[(system.qd_sites[1]) * 3 + 2]):
+                        x[(system.qd_sites[1] + 1) * 3 + 2] -= 3
 
                 # solve linear system
                 f, J = self._get_system(x, system, periodic_bcs)
-                #kam = np.argmax(abs(f))
-                #print('max f is ', max(abs(f)), " at ", kam, " (", f[kam], ")")
+                # kam = np.argmax(abs(f))
+                # print('max f is ', max(abs(f)), " at ", kam, " (", f[kam], ")")
 
                 if gamma != 1:
-                    f -= (1-gamma)*f0
+                    f -= (1 - gamma) * f0
 
                 try:
                     dx = self._sparse_solver(J, -f)
@@ -310,7 +310,7 @@ class Solver():
                             X0 = system.xpts
                             ax = fig.add_subplot(111)
                             vx, vefn, vefp = f[2::3], f[0::3], f[1::3]
-                            #l1, = ax.plot(X0 * 1e7, -system.bl - system.Eg - vx, lw=2, color='k', ls='-')
+                            # l1, = ax.plot(X0 * 1e7, -system.bl - system.Eg - vx, lw=2, color='k', ls='-')
                             # l2, = ax.plot(X0 * 1e7, -system.bl - vx, lw=2, color='k', ls='-')
                             l1, = ax.plot(X0 * 1e7, vx, lw=2, color='k', ls='-')
                             l2, = ax.plot(X0 * 1e7, vefn, lw=2, color='#cf392e', ls='-')
@@ -324,7 +324,7 @@ class Solver():
                             X0 = system.xpts
                             ax = fig.add_subplot(111)
                             vx, vefn, vefp = dx[2::3], dx[0::3], dx[1::3]
-                            #l1, = ax.plot(X0 * 1e7, -system.bl - system.Eg - vx, lw=2, color='k', ls='-')
+                            # l1, = ax.plot(X0 * 1e7, -system.bl - system.Eg - vx, lw=2, color='k', ls='-')
                             # l2, = ax.plot(X0 * 1e7, -system.bl - vx, lw=2, color='k', ls='-')
                             l1, = ax.plot(X0 * 1e7, vx, lw=2, color='k', ls='-')
                             l2, = ax.plot(X0 * 1e7, vefn, lw=2, color='#cf392e', ls='-')
@@ -340,17 +340,17 @@ class Solver():
                             ax = fig.add_subplot(111)
                             vx, vefn, vefp = x[2::3], x[0::3], x[1::3]
                             vt = system.scaling.energy
-                            l1, = ax.plot(X0, vt*vefn, lw=2, color='#2e89cf', ls='--')
-                            l2, = ax.plot(X0, vt*vefp, lw=2, color='#cf392e', ls='--')
+                            l1, = ax.plot(X0, vt * vefn, lw=2, color='#2e89cf', ls='--')
+                            l2, = ax.plot(X0, vt * vefp, lw=2, color='#cf392e', ls='--')
                             l3, = ax.plot(X0, -vt * (vx + system.bl), lw=2, color='k', ls='-')
                             l4, = ax.plot(X0, -vt * (vx + system.bl + system.Eg), lw=2, color='k', ls='-')
-                            l4, = ax.plot(X0, -vt * (vx-vx[0]), lw=2, color='g', ls='--')
+                            l4, = ax.plot(X0, -vt * (vx - vx[0]), lw=2, color='g', ls='--')
                             plt.title("stuck equilibrium")
                             plt.show()
                             break
                         if np.isnan(error) or error > 1e30:
-                            kam=np.argmax(abs(dx))
-                            print('max value ',error," at ",kam," (",dx[kam],")")
+                            kam = np.argmax(abs(dx))
+                            print('max value ', error, " at ", kam, " (", dx[kam], ")")
                             fig = plt.figure()
                             X0 = system.xpts
                             ax = fig.add_subplot(111)
@@ -368,10 +368,10 @@ class Solver():
                             break
                         if error < htol:
                             converged = True
-                        else: 
+                        else:
                             # damping and new value of x
-                            #print(dx[system.eml_sites])
-                            #dx[system.qd_sites[1]]
+                            # print(dx[system.eml_sites])
+                            # dx[system.qd_sites[1]]
                             self._damping(dx)
                             x += dx
                         # print status of solution procedure
@@ -386,9 +386,9 @@ class Solver():
                     msg = "**  The Newton-Raphson algorithm diverged, try a better guess or finer grid  **"
                     logging.error(msg)
                     fig = plt.figure()
-                    X0=system.xpts
+                    X0 = system.xpts
                     ax = fig.add_subplot(111)
-                    vx,vefn,vefp=x[2::3], x[0::3], x[1::3]
+                    vx, vefn, vefp = x[2::3], x[0::3], x[1::3]
                     l1, = ax.plot(X0 * 1e7, -system.bl - system.Eg - vx, lw=2, color='k', ls='-')
                     l2, = ax.plot(X0 * 1e7, -system.bl - vx, lw=2, color='k', ls='-')
                     l3, = ax.plot(X0 * 1e7, vefn, lw=2, color='#cf392e', ls='-')
@@ -400,13 +400,13 @@ class Solver():
                     plt.show()
 
                     break
-                        
+
         if converged:
             return x
         else:
             return None
 
-    def IVcurve(self, system, voltages, file_name, guess=None, tol=1e-6, 
+    def IVcurve(self, system, voltages, file_name, guess=None, tol=1e-6,
                 periodic_bcs=True, maxiter=300, verbose=True, htp=1, fmt='npz'):
         """
         Solve the Drift Diffusion Poisson equations for the voltages provided. The
@@ -461,20 +461,20 @@ class Solver():
         # create a dictionary 'result' with efn and efp
         if guess is None:
             result = self.solve(system, compute='Poisson', tol=tol,
-                                periodic_bcs=periodic_bcs, maxiter=maxiter, 
+                                periodic_bcs=periodic_bcs, maxiter=maxiter,
                                 verbose=verbose, htp=htp)
         else:
             result = guess
         # sites of the right contact
         nx = system.nx
 
-        #qd2=system.qd_sites[1]
-        rc = nx-1
-        #rc = range(qd2+20,nx)
-        #print(rc)
+        # qd2=system.qd_sites[1]
+        rc = nx - 1
+        # rc = range(qd2+20,nx)
+        # print(rc)
 
         # sign of the voltage to apply
-        if system.rho[nx-1] < 0:
+        if system.rho[nx - 1] < 0:
             q = 1
         else:
             q = -1
@@ -485,7 +485,7 @@ class Solver():
                 logging.info("Equilibrium potential already computed. Moving on.")
         else:
             self.solve(system, compute='Poisson', tol=tol,
-                       periodic_bcs=periodic_bcs, maxiter=maxiter, 
+                       periodic_bcs=periodic_bcs, maxiter=maxiter,
                        verbose=verbose, htp=htp)
 
         # Applied potentials made dimensionless
@@ -497,28 +497,33 @@ class Solver():
         L[:] = np.nan
         r1 = result.copy()
 
-        #v0=Vapp[0]
-        #self.equilibrium=np.linspace(-system.contacts_WF[0] / system.scaling.energy, -system.contacts_WF[1] / system.scaling.energy+v0*q, system.nx)
-        vapp0=0
-        #nq1
+        # v0=Vapp[0]
+        # self.equilibrium=np.linspace(-system.contacts_WF[0] / system.scaling.energy, -system.contacts_WF[1] / system.scaling.energy+v0*q, system.nx)
+        vapp0 = 0
+        # nq1
         for idx, vapp in enumerate(Vapp):
 
             if verbose:
                 logging.info("Applied voltage: {0} V".format(voltages[idx]))
 
             # Apply the voltage on the right contact
-            if(voltages[idx]>1.8):
-                result['v']=result['v']+drv
-                result['efn']=result['efn']+drfn
-                result['efp']=result['efp']+drfp
+            if (voltages[idx] > 1.8):
+                result['v'] = result['v'] + drv
+                result['efn'] = result['efn'] + drfn
+                result['efp'] = result['efp'] + drfp
             result['v'][rc] = self.equilibrium[rc] + q * vapp
 
             # Call the Drift Diffusion Poisson solver
-            result = self.solve(system, guess=result, tol=tol, periodic_bcs=periodic_bcs,\
+            result = self.solve(system, guess=result, tol=tol, periodic_bcs=periodic_bcs, \
                                 maxiter=maxiter, verbose=verbose, htp=htp)
-            drv=result['v']-r1['v']
-            drfn=result['efn']-r1['efn']
-            drfp=result['efp']-r1['efp']
+            if result is None:
+                logging.info("The solver failed to converge for the applied voltage"
+                             + " {0} V (index {1}).".format(voltages[idx], idx))
+                return J, L
+
+            drv = result['v'] - r1['v']
+            drfn = result['efn'] - r1['efn']
+            drfp = result['efp'] - r1['efp']
             if result is not None:
                 # 1. Save efn, efp, v
                 name = file_name + "_{0}".format(idx)
@@ -535,17 +540,17 @@ class Solver():
                     J[idx] = az.full_current()
                     L[idx] = az.full_emission()
                     r1 = result.copy()
-                    logging.info("For {0} V, J = {1}.".format(voltages[idx], system.scaling.current*J[idx]))
+                    logging.info("For {0} V, J = {1}.".format(voltages[idx], system.scaling.current * J[idx]))
                 except Exception:
-                   logging.info("Could not compute the current for the applied voltage"\
-                    + " {0} V (index {1}).".format(voltages[idx], idx))
+                    logging.info("Could not compute the current for the applied voltage" \
+                                 + " {0} V (index {1}).".format(voltages[idx], idx))
 
             else:
-                logging.info("The solver failed to converge for the applied voltage"\
-                      + " {0} V (index {1}).".format(voltages[idx], idx))
-                return J,L
+                logging.info("The solver failed to converge for the applied voltage" \
+                             + " {0} V (index {1}).".format(voltages[idx], idx))
+                return J, L
                 break
-        return J,L
+        return J, L
 
 
 default = Solver()

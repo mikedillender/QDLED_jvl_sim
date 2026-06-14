@@ -114,12 +114,17 @@ def getJ(sys, v, efn, efp):
         eps_m1x = .5 * (epsilon[sites - 1] + epsilon[sites])
         eps_p1x = .5 * (epsilon[sites + 1] + epsilon[sites])
 
+        if getattr(sys, "has_qd", False) and hasattr(sys, "poisson_charge_width"):
+            charge_weight = sys.poisson_charge_width[sites] / dxbar
+        else:
+            charge_weight = 1.0
+
         dvm1 = -eps_m1x * 1. / (dxm1 * dxbar)
-        dv = eps_m1x / (dxm1 * dxbar) + eps_p1x / (dx * dxbar) - drho_dv_s[sites]
+        dv = eps_m1x / (dxm1 * dxbar) + eps_p1x / (dx * dxbar) - charge_weight * drho_dv_s[sites]
         dvp1 = -eps_p1x * 1. / (dx * dxbar)
         #dvpN = -eps_p1y * 1. / (dy * dybar)
-        defn = - drho_defn_s[sites]
-        defp = - drho_defp_s[sites]
+        defn = - charge_weight * drho_defn_s[sites]
+        defp = - charge_weight * drho_defp_s[sites]
 
         return dvm1, dv, defn, defp, dvp1
 

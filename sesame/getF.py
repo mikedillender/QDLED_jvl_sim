@@ -88,7 +88,12 @@ def getF(sys, v, efn, efp, veq):
     eps_m1x = .5 * (sys.epsilon[sites - 1] + sys.epsilon[sites])
     eps_p1x = .5 * (sys.epsilon[sites + 1] + sys.epsilon[sites])
 
-    fv = (eps_m1x * (v[sites] - v[sites - 1]) / dxm1 - eps_p1x * (v[sites + 1] - v[sites]) / dx) / dxbar - rho[sites]
+    if getattr(sys, "has_qd", False) and hasattr(sys, "poisson_charge_width"):
+        charge_weight = sys.poisson_charge_width[sites] / dxbar
+    else:
+        charge_weight = 1.0
+
+    fv = (eps_m1x * (v[sites] - v[sites - 1]) / dxm1 - eps_p1x * (v[sites + 1] - v[sites]) / dx) / dxbar - charge_weight * rho[sites]
 
     vec[3 * sites + 2] = fv
 

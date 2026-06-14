@@ -83,15 +83,20 @@ def getFandJ_eq(sys, v):
     eps_m1x = .5 * (sys.epsilon[sites-1] + sys.epsilon[sites])
     eps_p1x = .5 * (sys.epsilon[sites+1] + sys.epsilon[sites])
 
+    if getattr(sys, "has_qd", False) and hasattr(sys, "poisson_charge_width"):
+        charge_weight = sys.poisson_charge_width[sites] / dxbar
+    else:
+        charge_weight = 1.0
+
     fvx = (eps_m1x*(v[sites] - v[sites-1]) / dxm1 - eps_p1x*(v[sites+1] - v[sites])/dx) / dxbar
-    fv = fvx - rho[sites]
+    fv = fvx - charge_weight * rho[sites]
     # update the vector rows for the inner part of the system
     vec[sites] = fv
 
     #-------------------------- fv derivatives --------------------------------
     #dvmN = -eps_m1y*1./(dym1 * dybar)
     dvm1 = -eps_m1x*1./(dxm1 * dxbar)
-    dv = eps_m1x/(dxm1*dxbar) + eps_p1x/(dx*dxbar) - drho_dv[sites]
+    dv = eps_m1x/(dxm1*dxbar) + eps_p1x/(dx*dxbar) - charge_weight * drho_dv[sites]
     dvp1 = -eps_p1x*1./(dx * dxbar)
     #dvpN = -eps_p1y*1./(dy * dybar)
     #dvpN = -eps_p1y*1./(dy * dybar)
