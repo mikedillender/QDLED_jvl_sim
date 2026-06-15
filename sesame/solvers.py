@@ -511,7 +511,7 @@ class Solver():
                 logging.info("Applied voltage: {0} V".format(voltages[idx]))
 
             # Apply the voltage on the right contact
-            if (voltages[idx] > 1.8):
+            if (voltages[idx] > 1 and idx>0):
                 result['v'] = result['v'] + drv
                 result['efn'] = result['efn'] + drfn
                 result['efp'] = result['efp'] + drfp
@@ -532,7 +532,6 @@ class Solver():
                 # 1. Save efn, efp, v
                 name = file_name + "_{0}".format(idx)
                 # add some system settings to the saved results
-
                 if fmt == 'mat':
                     save_sim(system, result, name, fmt='mat')
                 else:

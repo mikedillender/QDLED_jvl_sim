@@ -8,42 +8,29 @@ def build_system(m_qd=2):
     """Build a symmetric QD-LED-like structure with m_qd discrete QD sites."""
     if m_qd < 1:
         raise ValueError("m_qd must be >= 1")
-
-    t_hil = 20e-7
-    t_htl = 20e-7
-    t_etl = 40e-7
-    t_bqd = t_hil + t_htl
-
-    r_qdc = 1.75e-7
-    r_qds = 1.0e-7
-    r_qd = r_qdc + r_qds
-
-    t_qdl = 2 * m_qd * r_qd
+    t_htl = 25e-7 # HTL thickness in cm
+    t_etl = 40e-7 # ETL thickness in cm
+    r_qdc = 1.75e-7 # core radius in cm
+    r_qds = 1.0e-7 # shell thickness in cm
+    r_qd = r_qdc + r_qds # total radius of the QD
+    t_qdl = 2 * m_qd * r_qd # QDL thickness is (QD diameter)*m
+    t_bqd = t_htl
     t_aqd = t_bqd + t_qdl
     t_total = t_aqd + t_etl
-
-    print(
-        "m_qd =", m_qd,
-        "| t_total =", t_total,
-        "| rqd =", r_qd,
-        "| taqd =", t_aqd,
-        "| tbqd =", t_bqd,
-    )
+    print("m_qd =", m_qd,"| t_total =", t_total,"| rqd =", r_qd,"| taqd =", t_aqd,"| tbqd =", t_bqd)
 
     dd = 4e-7
-    dd2 = 1.5e-7
     qd_centers = t_bqd + (2 * np.arange(m_qd) + 1) * r_qd
-
     # Dense mesh at contacts and heterojunctions, with the QD layer represented
     # only by its discrete center sites.
     x = np.concatenate((
-        np.linspace(0, dd, 20, endpoint=False),
+        np.linspace(0, dd, 30, endpoint=False),
         np.linspace(dd, t_bqd - dd, 70, endpoint=False),
-        np.linspace(t_bqd - dd, t_bqd, 40, endpoint=False),
+        np.linspace(t_bqd - dd, t_bqd, 60, endpoint=False),
         qd_centers,
-        np.linspace(t_aqd, t_aqd + dd, 40, endpoint=False),
+        np.linspace(t_aqd, t_aqd + dd, 60, endpoint=False),
         np.linspace(t_aqd + dd, t_total - dd, 60, endpoint=False),
-        np.linspace(t_total - dd, t_total, 20),
+        np.linspace(t_total - dd, t_total, 30),
     ))
 
     sys = sesame.Builder(x)
@@ -82,16 +69,7 @@ def build_system(m_qd=2):
     dEc = etl['affinity'] - qdc['affinity']
     dEv = qdc['affinity'] + qdc['Eg'] - (htl['affinity'] + htl['Eg'])
     print("dEc, dEv =", dEc, dEv, "| delta =", dEc - dEv)
-
-    sys.add_qd(
-        1.0,
-        qd_mns=qd_mns,
-        qd_mps=qd_mps,
-        dEc=dEc,
-        dEv=dEv,
-        location=qd_region,
-        r_qd=r_qd,
-    )
+    sys.add_qd(r_qds*1e7,qd_mns=qd_mns,qd_mps=qd_mps,dEc=dEc,dEv=dEv,location=qd_region,r_qd=r_qd)
 
     sys.add_donor(1e17, etl_region)
     sys.add_acceptor(1e17, htl_region)
