@@ -9,3 +9,7 @@ Benoit Gaury acknowledges support under the Cooperative Research Agreement
 between the University of Maryland and the National Institute of Standards and
 Technology Center for Nanoscale Science and Technology, Award 70NANB14H209,
 through the University of Maryland.
+
+QD-LED Extension
+-----------------
+The extension of the Sesame code to QD-LEDs was done by Mike Dillender at MIT
