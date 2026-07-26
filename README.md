@@ -5,3 +5,13 @@ So, I spent about a month remaking their codebase using the [Sesame framework](h
 My bigger problems are that the equation they use for tunneling is not rigorously justified (it seems to be somewhat arbitrarily chosen to make it easily computable in a solver) and that the transport layers are treated as heavily doped inorganic semiconductors, which is almost certainly untrue for the HTL. Moreover, the temperature and layer thickness scalings are both incorrectly predicted by this model.
 
 There are probably a lot of problems with my implementation (namely the Boltzmann approximation), but I do not believe the model is worth spending much more time on, so I thought I should just release it publicly.
+
+## Relationship to Sesame
+
+This repository contains a substantially modified version of the Sesame drift-diffusion–Poisson semiconductor-device simulator developed by Benoit Gaury, Paul Haney, and contributors. 
+
+The original Sesame project is available at: https://github.com/usnistgov/sesame
+
+The Sesame solver was modified here to support one-dimensional QD-LED simulations, including discretized quantum-dot sites, modified interfacial transport and recombination, and QD-specific electrostatics. 
+
+The original Sesame code is Copyright 2017 University of Maryland and is redistributed under the BSD 3-Clause license. See `LICENSE.rst`.
