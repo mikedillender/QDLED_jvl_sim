@@ -58,7 +58,7 @@ More generally, the model treats the transport layers as constant-mobility, heav
 
 This reconstruction also has limitations of its own.
 
-Most importantly, Sesame uses Boltzmann carrier statistics. That approximation is questionable in the high-accumulation regime near the QD interfaces. The close similarity between the electrostatic profiles generated here and those in the published work suggests that the original calculation may employ a comparable approximation, but this cannot be established without access to the source code.
+Most importantly, Sesame uses Boltzmann carrier statistics. That approximation is questionable in the high-accumulation regime near the QD interfaces. The close similarity between the electrostatic profiles generated here and those in the published work suggests that the original calculation may employ a comparable approximation, but this cannot be established without access to the source code. Moreover, considering the application of the Einstein equation in the original paper and the explicitly Boltzmann boundary conditions at the contacts, I am uncertain if this problem is uniquely mine. Although, as discussed, there are already a number of uncertainties regarding the actual implementation.
 
 The implementation should therefore be understood as a reconstruction of the reported model, not as a definitive physical description of QD-LED operation.
 
