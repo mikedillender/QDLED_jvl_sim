@@ -1,0 +1,6 @@
+# regenerable sweep results (python jung2021_runs.py)
+data/
+# regenerable figures (python jung2021_figures.py, side_by_side.py, ...);
+# the ones used by docs/jmk_model_issues.md are copied to docs/figures/
+figures/
+__pycache__/
